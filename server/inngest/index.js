@@ -12,17 +12,22 @@ const syncUserCreation = inngest.createFunction(
   { event: "clerk/user.created" },
 
   async ({ event }) => {
-    const { id, first_name, last_name, email_addresses, image_url } =
-      event.data;
+    try {
+      const { id, first_name, last_name, email_addresses, image_url } = event.data
 
-    const userData = {
-      _id: id,
-      email: email_addresses?.[0]?.email_address,
-      name: `${first_name || ""} ${last_name || ""}`,
-      image: image_url,
-    };
+      const userData = {
+        _id: id,
+        email: email_addresses?.[0]?.email_address,
+        name: `${first_name || ""} ${last_name || ""}`.trim(),
+        image: image_url,
+      }
 
-    await User.create(userData);
+      await User.create(userData)
+      console.log("User created:", id)
+    } catch (error) {
+      console.error("Error creating user:", error.message)
+      throw error
+    }
   }
 );
 
@@ -34,9 +39,14 @@ const syncUserDeletion = inngest.createFunction(
   { event: "clerk/user.deleted" },
 
   async ({ event }) => {
-    const { id } = event.data;
-
-    await User.findByIdAndDelete(id);
+    try {
+      const { id } = event.data
+      await User.findByIdAndDelete(id)
+      console.log("User deleted:", id)
+    } catch (error) {
+      console.error("Error deleting user:", error.message)
+      throw error
+    }
   }
 );
 
@@ -48,16 +58,21 @@ const syncUserUpdation = inngest.createFunction(
   { event: "clerk/user.updated" },
 
   async ({ event }) => {
-    const { id, first_name, last_name, email_addresses, image_url } =
-      event.data;
+    try {
+      const { id, first_name, last_name, email_addresses, image_url } = event.data
 
-    const userData = {
-      email: email_addresses?.[0]?.email_address,
-      name: `${first_name || ""} ${last_name || ""}`,
-      image: image_url,
-    };
+      const userData = {
+        email: email_addresses?.[0]?.email_address,
+        name: `${first_name || ""} ${last_name || ""}`.trim(),
+        image: image_url,
+      }
 
-    await User.findByIdAndUpdate(id, userData);
+      await User.findByIdAndUpdate(id, userData)
+      console.log("User updated:", id)
+    } catch (error) {
+      console.error("Error updating user:", error.message)
+      throw error
+    }
   }
 );
 
