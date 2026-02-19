@@ -1,0 +1,51 @@
+/* Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+/* Tailwind */
+@import "tailwindcss";
+
+/* Custom Theme Variables */
+@theme {
+  --color-primary: #f84565;
+  --color-primary-dull: #d63854; /* fixed invalid hex */
+}
+
+/* Global Styles */
+* {
+  font-family: "Outfit", sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: #787777 #1e1e1e;
+}
+
+/* Body */
+body {
+  color: white;
+  background-color: #09090B;
+}
+
+/* Hide Scrollbar */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Chrome, Safari Scrollbar Hide */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Remove Number Input Arrows */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox Number Input */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Fix Calendar Picker Icon */
+::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
