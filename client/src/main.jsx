@@ -14,15 +14,12 @@ if (import.meta.env.DEV) {
   }
 }
 
+// Import your Publishable Key for clerk for login 
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
-  // Import your Publishable Key for clerk for login 
-  const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-
-  if (!PUBLISHABLE_KEY) {
-    throw new Error('Add your Clerk Publishable Key to the .env file')
-  }
-
-
+if (!PUBLISHABLE_KEY) {
+  throw new Error('Add your Clerk Publishable Key to the .env file')
+}
 
 createRoot(document.getElementById('root')).render(
   <ClerkProvider 
@@ -36,6 +33,7 @@ createRoot(document.getElementById('root')).render(
     localization={{
       phoneInputPlaceholder: '+91 98765 43210'
     }}
+    telemetry={false}
   >
     <BrowserRouter>
       <App />
