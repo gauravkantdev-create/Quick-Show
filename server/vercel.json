@@ -11,12 +11,5 @@
       "src": "/(.*)",
       "dest": "server.js"
     }
-  ],
-  "env": {
-    "MONGODB_URI": "@mongodb_uri",
-    "CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key",
-    "CLERK_SECRET_KEY": "@clerk_secret_key",
-    "INNGEST_EVENT_KEY": "@inngest_event_key",
-    "INNGEST_SIGNING_KEY": "@inngest_signing_key"
-  }
+  ]
 }
