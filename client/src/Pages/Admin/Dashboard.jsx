@@ -1,116 +1,312 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ChartLine, CircleDollarSign, PlayCircle, Star, User } from 'lucide-react'
-import { dummyDashboardData } from '../../assets/assets'
+import { 
+ChartLine, 
+CircleDollarSign, 
+PlayCircle, 
+Star, 
+User, 
+RefreshCw, 
+TrendingUp, 
+Calendar 
+} from 'lucide-react'
+
+import { Link } from "react-router-dom"
+
+import { api } from '../../Lib/api'
 import Title from '../../Components/Admin/Title'
 import Loading from '../../Components/Loading'
 import BlurCircle from '../../Components/BlurCircle'
 import { dateFormat } from '../../Lib/dateFormat'
+import { useAuth } from '@clerk/clerk-react'
 
 const Dashboard = () => {
-  const currency = import.meta.env.VITE_CURRENCY || '₹'
 
-  const [dashboardData, setDashboardData] = useState({
-    totalBookings: 0,
-    totalRevenue: 0,
-    activeShows: [],
-    totalUsers: 0,
-  })
+const currency = import.meta.env.VITE_CURRENCY || '₹'
+const { getToken } = useAuth()
 
-  const [loading, setLoading] = useState(true)
+const [dashboardData, setDashboardData] = useState({
+totalBookings: 0,
+totalRevenue: 0,
+activeShows: [],
+totalUsers: 0,
+})
 
-  const fetchDashboardData = async () => {
-    try {
-      setDashboardData(dummyDashboardData)
-    } catch (error) {
-      console.error('Failed to fetch dashboard data', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchDashboardData()
-  }, [])
 
-  const dashboardCards = useMemo(
-    () => [
-      {
-        title: 'Total Bookings',
-        value: dashboardData.totalBookings ?? 0,
-        icon: ChartLine,
-      },
-      {
-        title: 'Total Revenue',
-        value: `${currency}${dashboardData.totalRevenue ?? 0}`,
-        icon: CircleDollarSign,
-      },
-      {
-        title: 'Active Shows',
-        value: dashboardData.activeShows?.length ?? 0,
-        icon: PlayCircle,
-      },
-      {
-        title: 'Total Users',
-        value: dashboardData.totalUsers ?? 0,
-        icon: User,
-      },
-    ],
-    [dashboardData, currency]
-  )
 
-  // ✅ Proper loading handling
-  if (loading) return <Loading />
+/* ---------------- FETCH DASHBOARD DATA ---------------- */
 
-  return (
-    <div className="relative bg-black min-h-screen w-full text-white">
-      <div className="p-4 sm:p-6 md:p-8 lg:p-10">
-        <Title text1="Admin" text2="Dashboard" />
+const fetchDashboardData = async () => {
 
-        <div className='relative mt-6 sm:mt-8'>
-          <BlurCircle top="-100px" left='0'/>
-          <BlurCircle bottom="-100px" right='0'/>
-          
-          <div className='relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full'>
-            {dashboardCards.map((card, index) => (
-              <div key={index} className='flex items-center justify-between px-4 py-4 bg-primary/10 border border-primary/20 rounded-lg transition-all duration-300 hover:bg-primary/20'>
-                <div>
-                  <p className='text-xs tracking-widest text-gray-400 uppercase'>{card.title}</p>
-                  <h2 className='text-xl sm:text-2xl font-semibold mt-1'>{card.value}</h2>
-                </div>
-                <card.icon className='w-6 h-6 sm:w-7 sm:h-7 text-primary'/>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+try {
 
-      <div className='p-4 sm:p-6 md:p-8 lg:p-10'>
-        <p className='text-base sm:text-lg font-medium mb-4'>ACTIVE SHOWS</p>
+setLoading(true)
 
-        <div className='relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6'>
-          <BlurCircle top="100px" left="-100px"/>
-          {dashboardData.activeShows.map((show)=>(
-            <div key={show._id} className="rounded-lg overflow-hidden pb-3 bg-primary/10 border border-primary/20 hover:-translate-y-1 transition duration-300">
-              <img src={show.movie.poster_path} alt={show.movie.title} className="h-48 sm:h-56 md:h-60 w-full object-cover" />
-              <p className='font-medium p-2 truncate text-sm sm:text-base'>{show.movie.title}</p>
+const token = await getToken()
 
-              <div className='flex items-center justify-between px-2'>
-                <p className='text-base sm:text-lg font-medium'>{currency} {show.showPrice}</p>
-                <p className='flex items-center gap-1 text-xs sm:text-sm text-gray-400 mt-1 pr-1'>
-                  <Star className='w-3 h-3 sm:w-4 sm:h-4 text-primary fill-primary'/>
-                  {show.movie.vote_average.toFixed(1)}
-                </p>
-              </div>
+// ✅ FIXED (use shows instead of dashboard api)
 
-              <p className='px-2 pt-2 text-xs sm:text-sm text-gray-500'>
-                {dateFormat(show.showDateTime)}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+const showsRes = await api.getShows(token)
+
+if (showsRes.success) {
+
+const shows = showsRes.data || []
+
+setDashboardData({
+
+totalBookings: 0,
+
+totalRevenue: shows.reduce(
+(acc, show) => acc + (show.showPrice || 0),
+0
+),
+
+activeShows: shows,
+
+totalUsers: 0
+
+})
+
+}
+
+} catch (error) {
+
+console.error("Dashboard error:", error)
+
+} finally {
+
+setLoading(false)
+
+}
+
+}
+
+
+useEffect(() => {
+fetchDashboardData()
+}, [])
+
+
+
+/* ---------------- DASHBOARD CARDS ---------------- */
+
+const dashboardCards = useMemo(
+() => [
+
+{
+title: 'Total Bookings',
+value: dashboardData.totalBookings?.toLocaleString() || '0',
+icon: ChartLine,
+color: 'text-blue-400',
+bgColor: 'bg-blue-500/10',
+},
+
+{
+title: 'Total Revenue',
+value: `${currency}${dashboardData.totalRevenue?.toLocaleString() || '0'}`,
+icon: CircleDollarSign,
+color: 'text-green-400',
+bgColor: 'bg-green-500/10',
+},
+
+{
+title: 'Active Shows',
+value: dashboardData.activeShows?.length || '0',
+icon: PlayCircle,
+color: 'text-yellow-400',
+bgColor: 'bg-yellow-500/10',
+},
+
+{
+title: 'Total Users',
+value: dashboardData.totalUsers?.toLocaleString() || '0',
+icon: User,
+color: 'text-purple-400',
+bgColor: 'bg-purple-500/10',
+},
+
+],
+[dashboardData, currency]
+)
+
+
+
+/* ---------------- LOADING ---------------- */
+
+if (loading) {
+return (
+<div className="min-h-screen bg-black flex items-center justify-center">
+<Loading />
+</div>
+)
+}
+
+
+
+return (
+
+<div className="relative bg-black min-h-screen text-white">
+
+<div className="p-6 md:p-8">
+
+{/* Header */}
+
+<div className="flex items-center justify-between mb-6">
+
+<Title text1="Admin" text2="Dashboard" />
+
+<button
+onClick={fetchDashboardData}
+className="flex items-center gap-2 px-3 py-2 text-sm bg-primary/20 hover:bg-primary/30 rounded"
+>
+
+<RefreshCw className="w-4 h-4" />
+Refresh
+
+</button>
+
+</div>
+
+
+
+{/* Quick Actions */}
+
+<div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+
+<Link
+to="/admin/add-shows"
+className="flex items-center gap-2 px-4 py-3 bg-primary/20 hover:bg-primary/30 rounded-lg transition"
+>
+<PlayCircle className="w-5 h-5 text-primary" />
+<span className="text-sm font-medium">Add Show</span>
+</Link>
+
+
+<Link
+to="/admin/list-shows"
+className="flex items-center gap-2 px-4 py-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition"
+>
+<Calendar className="w-5 h-5 text-blue-400" />
+<span className="text-sm font-medium">View Shows</span>
+</Link>
+
+
+<Link
+to="/admin/list-bookings"
+className="flex items-center gap-2 px-4 py-3 bg-green-500/10 hover:bg-green-500/20 rounded-lg transition"
+>
+<ChartLine className="w-5 h-5 text-green-400" />
+<span className="text-sm font-medium">Bookings</span>
+</Link>
+
+
+<div className="flex items-center gap-2 px-4 py-3 bg-purple-500/10 rounded-lg">
+<TrendingUp className="w-5 h-5 text-purple-400" />
+<span className="text-sm font-medium">
+{dashboardData.activeShows?.length || 0} Active
+</span>
+</div>
+
+</div>
+
+
+
+{/* Stats Cards */}
+
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+{dashboardCards.map((card, index) => (
+
+<div
+key={index}
+className={`p-4 ${card.bgColor} border border-primary/20 rounded-lg`}
+>
+
+<p className="text-sm text-gray-400">
+{card.title}
+</p>
+
+<h2 className="text-2xl font-semibold mt-2">
+{card.value}
+</h2>
+
+<card.icon className={`w-6 h-6 mt-3 ${card.color}`} />
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+
+
+{/* Active Shows */}
+
+<div className="p-6 md:p-8">
+
+<h2 className="text-xl font-semibold mb-6">
+Active Shows
+</h2>
+
+
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+{dashboardData.activeShows?.map((show) => (
+
+<div
+key={show._id}
+className="bg-primary/10 border border-primary/20 rounded-lg overflow-hidden hover:scale-105 transition"
+>
+
+<img
+src={show.movie?.poster}
+alt=""
+className="h-60 w-full object-cover"
+/>
+
+<div className="p-3">
+
+<h3 className="font-semibold">
+{show.movie?.title}
+</h3>
+
+<p className="text-sm text-gray-400 mt-1">
+{dateFormat(show.showDateTime)}
+</p>
+
+<div className="flex justify-between mt-2">
+
+<p className="font-semibold">
+{currency}{show.showPrice}
+</p>
+
+<p className="flex items-center gap-1 text-sm">
+
+<Star className="w-4 h-4 text-primary fill-primary" />
+
+{show.movie?.rating || "0"}
+
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+</div>
+
+)
+
 }
 
 export default Dashboard

@@ -1,50 +1,49 @@
 import { ArrowRight } from 'lucide-react'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BlurCircle from './BlurCircle'
+import Loading from './Loading'
 import MovieCard from './MovieCard'
+import { api } from '../Lib/api'
 
 const FeaturedSection = () => {
   const navigate = useNavigate()
+  const [movies, setMovies] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const dummyShowsData = [
-    {
-      id: 1,
-      title: "Avengers: Endgame",
-      backdrop_path: "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
-      genre: [{name: "Action"}, {name: "Adventure"}],
-      release_date: "2024-01-15",
-      runtime: 120,
-      vote_average: 8.5
-    },
-    {
-      id: 2,
-      title: "The Dark Knight",
-      backdrop_path: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
-      genre: [{name: "Drama"}, {name: "Action"}],
-      release_date: "2024-02-20",
-      runtime: 105,
-      vote_average: 7.8
-    },
-    {
-      id: 3,
-      title: "Spider-Man",
-      backdrop_path: "https://image.tmdb.org/t/p/w500/gh4cZbhZxyTbgxQPxD0dOudNPTn.jpg",
-      genre: [{name: "Action"}, {name: "Adventure"}],
-      release_date: "2024-03-10",
-      runtime: 95,
-      vote_average: 6.9
-    },
-    {
-      id: 4,
-      title: "Inception",
-      backdrop_path: "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
-      genre: [{name: "Thriller"}, {name: "Sci-Fi"}],
-      release_date: "2024-04-05",
-      runtime: 110,
-      vote_average: 8.2
-    }
-  ]
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const response = await api.getShows();
+        if (response.success) {
+          const showsArray = Array.isArray(response.data) ? response.data : 
+                             Array.isArray(response.shows) ? response.shows : [];
+                             
+          const uniqueMoviesMap = new Map();
+          for (const show of showsArray) {
+            const movie = show?.movie;
+            if (!movie) continue;
+            const movieId = movie.id || movie._id || movie.imdbID;
+            if (!movieId) continue;
+            if (!uniqueMoviesMap.has(movieId)) {
+              uniqueMoviesMap.set(movieId, { 
+                ...movie, 
+                id: movieId,
+                showPrice: show.showPrice
+              });
+            }
+          }
+          setMovies(Array.from(uniqueMoviesMap.values()));
+        }
+      } catch (err) {
+        console.error('Error fetching featured movies:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMovies();
+  }, []);
 
   return (
     <div className='px-3 sm:px-4 md:px-6 lg:px-8 xl:px-16 2xl:px-24 overflow-hidden'>
@@ -65,13 +64,19 @@ const FeaturedSection = () => {
         </button>
       </div>
  
-  {/* mounting the dummy movies data  */}
-
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 mt-4 sm:mt-6 md:mt-8'>
-        {dummyShowsData.slice(0, 4).map((show) => (
-          <MovieCard key={show.id} movie={show} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center mt-8">
+          <Loading />
+        </div>
+      ) : movies.length > 0 ? (
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 mt-4 sm:mt-6 md:mt-8'>
+          {movies.slice(0, 4).map((show) => (
+            <MovieCard key={show.id} movie={show} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center text-gray-400 mt-8">No shows available.</div>
+      )}
 
       <div className='flex justify-center mt-8 sm:mt-10 md:mt-12 lg:mt-16'>
         <button

@@ -2,62 +2,100 @@ import express from "express"
 import cors from "cors"
 import "dotenv/config"
 import connectDB from "./config/db.js"
-import { clerkMiddleware } from '@clerk/express'
+
+import { clerkMiddleware, requireAuth } from '@clerk/express'
 import { serve } from "inngest/express"
 import { inngest, functions } from "./inngest/index.js"
+
+// ROUTES
 import showRoutes from './routes/showRoutes.js'
 import bookingRoutes from './routes/bookingRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import dashboardRoutes from './routes/dashboardRoutes.js'
+import theaterRoutes from './routes/theaterRoutes.js'
 
 const app = express()
 const port = process.env.PORT || 3000
 
-// Connect Database First
 const startServer = async () => {
   try {
-    await connectDB()
 
-    // Middleware
+    /* -------------------- DB CONNECT -------------------- */
+
+    await connectDB()
+    console.log("✅ Database Connected")
+
+    /* -------------------- MIDDLEWARE -------------------- */
+
     app.use(express.json())
+
     app.use(cors({
       origin: true,
       credentials: true
     }))
-    
-    // Only use Clerk if keys are properly configured
-    if (process.env.CLERK_SECRET_KEY && process.env.CLERK_SECRET_KEY.length > 40) {
-      app.use(clerkMiddleware())
-      console.log('✅ Clerk middleware enabled')
-    } else {
-      console.warn('⚠️  Clerk keys not configured properly - running without authentication')
-    }
 
-    // API Routes
+    /* -------------------- AUTH -------------------- */
+
+    app.use(clerkMiddleware())
+    console.log("🔐 Clerk authentication ENABLED")
+
+    /* -------------------- TEST ROUTE -------------------- */
+
     app.get("/", (req, res) => {
-      res.send("Server is live 🚀")
+      res.json({
+        success: true,
+        message: "Server is live 🚀"
+      })
     })
 
-    app.use('/api/inngest', serve({ client: inngest, functions }))
+
+    /* -------------------- INNGEST -------------------- */
+
+    app.use('/api/inngest', serve({
+      client: inngest,
+      functions
+    }))
+
+
+    /* -------------------- PUBLIC ROUTES -------------------- */
+
     app.use('/api/shows', showRoutes)
-    app.use('/api/bookings', bookingRoutes)
-    app.use('/api/users', userRoutes)
-    app.use('/api/dashboard', dashboardRoutes)
+    app.use('/api/theaters', theaterRoutes)
 
-    // Error handling middleware
+
+    /* -------------------- PROTECTED ROUTES -------------------- */
+
+    app.use('/api/bookings', requireAuth(), bookingRoutes)
+    app.use('/api/users', requireAuth(), userRoutes)
+    app.use('/api/dashboard', requireAuth(), dashboardRoutes)
+
+
+    /* -------------------- ERROR HANDLER -------------------- */
+
     app.use((err, req, res, next) => {
-      console.error('Server Error:', err)
-      res.status(500).json({ error: err.message })
+
+      console.error("Server Error:", err)
+
+      res.status(500).json({
+        success: false,
+        error: err.message
+      })
+
     })
 
-    // Start Server
+
+    /* -------------------- SERVER START -------------------- */
+
     app.listen(port, () => {
-      console.log(`Server is running on port ${port}`)
+      console.log(`🚀 Server running on port ${port}`)
     })
+
 
   } catch (error) {
+
     console.log("Server failed to start:", error.message)
     process.exit(1)
+
   }
 }
 

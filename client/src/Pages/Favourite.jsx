@@ -1,13 +1,47 @@
 import React from 'react'
+import { useEffect, useState } from 'react'
 import { useUser, SignInButton } from '@clerk/clerk-react'
 import useFavourites from '../Lib/useFavourites'
-import { dummyShowsData } from '../assets/assets'
 import MovieCard from '../Components/MovieCard'
+import { api } from '../Lib/api'
+import Loading from '../Components/Loading'
 
 const Favourite = () => {
   const { isSignedIn, user } = useUser()
   const { favourites, isFav } = useFavourites()
-  const favMovies = dummyShowsData.filter(m => isFav(m))
+  const [allMovies, setAllMovies] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const response = await api.getShows()
+        const showsArray = Array.isArray(response.data) ? response.data : []
+
+        const uniqueMoviesMap = new Map()
+        for (const show of showsArray) {
+          const movie = show?.movie
+          if (!movie) continue
+          const movieId = movie.id || movie._id || movie.imdbID
+          if (!movieId) continue
+          if (!uniqueMoviesMap.has(movieId)) {
+            uniqueMoviesMap.set(movieId, { 
+              ...movie, 
+              id: movieId,
+              showPrice: show.showPrice
+            })
+          }
+        }
+        setAllMovies(Array.from(uniqueMoviesMap.values()))
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMovies()
+  }, [])
+
+  const favMovies = allMovies.filter((m) => isFav(m))
 
   if (!isSignedIn) {
     return (
@@ -23,6 +57,8 @@ const Favourite = () => {
       </div>
     )
   }
+
+  if (loading) return <Loading />
 
   return (
     <div className="min-h-screen pt-16 sm:pt-20 md:pt-24 px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-32 pb-12">

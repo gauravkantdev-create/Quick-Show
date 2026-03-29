@@ -5,80 +5,168 @@ import BlurCircle from './BlurCircle'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 const DateSelect = ({ dateTime, id }) => {
+
   const navigate = useNavigate()
-  const [selected, setSelected] = useState(null)
+
+  const [selectedDate, setSelectedDate] = useState(
+    dateTime ? Object.keys(dateTime)[0] : null
+  )
+
+  const [selectedTime, setSelectedTime] = useState(null)
 
   if (!dateTime) return null
 
-  const onBookHandler = () => {
-    if (!selected) {
-      toast.error('Please select a date')
+
+  const handleBookShow = () => {
+
+    if (!selectedDate || !selectedTime) {
+      toast.error("Please select date & time")
       return
     }
 
-    // Route changed to use existing SheetLayout route: /movies/:id/:date
-    navigate(`/movies/${id}/${encodeURIComponent(selected)}`)
-    window.scrollTo(0, 0)
+    navigate(`/movie/${id}/${selectedDate}/${selectedTime}`)
   }
 
+
   return (
-    <div id="dateSelect" className="pt-16 sm:pt-20 md:pt-24">
-      <div className="relative p-4 sm:p-6 md:p-8 bg-primary/10 border border-primary/20 rounded-lg mx-3 sm:mx-4 md:mx-6 lg:mx-0">
+
+    <div className="mt-12">
+
+      <div className="relative bg-[#020617] border border-gray-800 p-6 rounded-xl">
 
         <BlurCircle top="-100px" left="-100px" />
-        <BlurCircle top="100px" right="0" />
+        <BlurCircle bottom="-100px" right="-100px" />
 
-        <p className="text-base sm:text-lg font-semibold">Choose Date</p>
+        {/* Title */}
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 text-xs sm:text-sm mt-4 sm:mt-5">
-          <div className="flex items-center gap-3 sm:gap-6 flex-1">
-            <ChevronLeft width={24} height={24} className="flex-shrink-0" />
+        <h2 className="text-xl font-semibold mb-6">
+          Select Date & Time
+        </h2>
 
-            <div className="grid grid-cols-3 md:flex gap-2 sm:gap-4">
-              {Object.keys(dateTime).map((date) => {
-                const parsedDate = new Date(date)
 
-                return (
-                  <button
-                    key={date}
-                    onClick={() => setSelected(date)}
-                    className={`flex flex-col items-center justify-center h-12 w-12 sm:h-14 sm:w-14 rounded-md transition
-                      ${
-                        selected === date
-                          ? 'border-2 border-white bg-primary text-white'
-                          : 'border border-primary/70 bg-gray-800 hover:bg-gray-700'
-                      }`}
-                  >
-                    <span className="text-xs sm:text-sm">{parsedDate.getDate()}</span>
-                    <span className="text-xs">
-                      {parsedDate.toLocaleDateString('en-US', {
-                        month: 'short',
-                      })}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+        {/* DATE SELECT */}
 
-            <ChevronRight width={24} height={24} className="flex-shrink-0" />
+        <div className="flex items-center gap-3 mb-6">
+
+          <ChevronLeft className="text-gray-500" />
+
+          <div className="flex gap-3 overflow-x-auto">
+
+            {Object.keys(dateTime).map((date) => {
+
+              const parsed = new Date(date)
+
+              return (
+
+                <button
+                  key={date}
+                  onClick={() => {
+                    setSelectedDate(date)
+                    setSelectedTime(null)
+                  }}
+
+                  className={`flex flex-col items-center justify-center
+                  w-16 h-16 rounded-lg transition
+
+                  ${
+                    selectedDate === date
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-900 border border-gray-700'
+                  }`}
+                >
+
+                  <span className="font-semibold">
+                    {parsed.getDate()}
+                  </span>
+
+                  <span className="text-xs">
+                    {parsed.toLocaleDateString('en-US', {
+                      month: 'short'
+                    })}
+                  </span>
+
+                </button>
+
+              )
+
+            })}
+
           </div>
 
-          <button
-            onClick={onBookHandler}
-            disabled={!selected}
-            className={`px-6 sm:px-8 py-2 sm:py-2.5 rounded transition-all whitespace-nowrap w-full sm:w-auto
-              ${
-                selected
-                  ? 'bg-primary text-white hover:bg-primary/90'
-                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-              }`}
-          >
-            Book Now
-          </button>
+          <ChevronRight className="text-gray-500" />
+
         </div>
+
+
+        {/* TIME SELECT */}
+
+        {selectedDate && (
+
+          <div>
+
+            <p className="text-gray-400 mb-3">
+              Available Times
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+
+              {dateTime[selectedDate]?.map((time, index) => (
+
+                <button
+                  key={index}
+                  onClick={() => setSelectedTime(time)}
+
+                  className={`px-4 py-2 rounded-lg transition
+
+                  ${
+                    selectedTime === time
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-900 border border-gray-700'
+                  }`}
+                >
+
+                  {time}
+
+                </button>
+
+              ))}
+
+            </div>
+
+          </div>
+
+        )}
+
+
+        {/* BOOK BUTTON */}
+
+        <div className="mt-8">
+
+          <button
+            onClick={handleBookShow}
+            disabled={!selectedDate || !selectedTime}
+
+            className={`w-full py-3 rounded-lg font-semibold transition
+
+            ${
+              selectedDate && selectedTime
+                ? 'bg-primary hover:bg-primary/90'
+                : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+
+            Book Show
+
+          </button>
+
+        </div>
+
       </div>
+
     </div>
+
   )
+
 }
 
 export default DateSelect

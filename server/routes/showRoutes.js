@@ -1,60 +1,209 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Show from '../models/Show.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all shows
+
+/* ---------------- GET ALL SHOWS ---------------- */
 router.get('/', async (req, res) => {
   try {
-    const shows = await Show.find().sort({ showDateTime: 1 });
-    res.json({ success: true, shows });
+    const shows = await Show.find()
+      .populate("theater")
+      .sort({ showDateTime: 1 });
+
+    res.json({
+      success: true,
+      data: shows
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.json({
+      success: false,
+      data: [],
+      message: error.message
+    });
   }
 });
 
-// Get show by ID
+
+/* ---------------- GET SHOWS BY THEATER ---------------- */
+/* 🔥 VERY IMPORTANT */
+router.get('/theater/:id', async (req, res) => {
+
+  try {
+
+    const shows = await Show.find({
+      theater: req.params.id
+    })
+      .populate("theater")
+      .sort({ showDateTime: 1 });
+
+    res.json({
+      success: true,
+      data: shows
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+
+  }
+
+});
+
+
+/* ---------------- GET SHOW BY ID ---------------- */
 router.get('/:id', async (req, res) => {
+
   try {
-    const show = await Show.findById(req.params.id);
-    if (!show) return res.status(404).json({ success: false, error: 'Show not found' });
-    res.json({ success: true, show });
+
+    const show = await Show.findById(req.params.id).populate("theater");
+
+    if (!show) {
+      return res.status(404).json({
+        success: false,
+        error: 'Show not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: show
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+
+    res.json({
+      success: false,
+      error: error.message
+    });
+
   }
+
 });
 
-// Create show (Admin only)
-router.post('/', requireAuth, async (req, res) => {
+
+/* ---------------- CREATE SHOW ---------------- */
+router.post('/', async (req, res) => {
+
   try {
-    const show = await Show.create(req.body);
-    res.status(201).json({ success: true, show });
+    const { movie, theater, showDateTime, showPrice, screen } = req.body;
+
+    const showDate = new Date(showDateTime);
+    if (!movie?.id || !theater || Number.isNaN(showDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid show payload",
+      });
+    }
+
+    const existingShow = await Show.findOne({
+      "movie.id": movie.id,
+      theater,
+      showDateTime: showDate,
+    });
+
+    if (existingShow) {
+      return res.status(409).json({
+        success: false,
+        error: "Show already exists for this movie, theater and time",
+      });
+    }
+
+    const show = await Show.create({
+      movie,
+      theater,
+      showDateTime: showDate,
+      showPrice,
+      screen,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: show
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+
+    res.json({
+      success: false,
+      error: error.message
+    });
+
   }
+
 });
 
-// Update show
+
+/* ---------------- UPDATE SHOW ---------------- */
 router.put('/:id', requireAuth, async (req, res) => {
+
   try {
-    const show = await Show.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!show) return res.status(404).json({ success: false, error: 'Show not found' });
-    res.json({ success: true, show });
+
+    const show = await Show.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    if (!show) {
+      return res.status(404).json({
+        success: false,
+        error: 'Show not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: show
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+
   }
+
 });
 
-// Delete show
-router.delete('/:id', requireAuth, async (req, res) => {
+
+/* ---------------- DELETE SHOW ---------------- */
+router.delete('/:id', async (req, res) => {
+
   try {
+
     const show = await Show.findByIdAndDelete(req.params.id);
-    if (!show) return res.status(404).json({ success: false, error: 'Show not found' });
-    res.json({ success: true, message: 'Show deleted' });
+
+    if (!show) {
+      return res.status(404).json({
+        success: false,
+        error: 'Show not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Show deleted'
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+
+    res.json({
+      success: false,
+      error: error.message
+    });
+
   }
+
 });
+
 
 export default router;

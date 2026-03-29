@@ -13,7 +13,8 @@ const Footer = () => {
     <footer className='w-full bg-black py-8 sm:py-10 md:py-12 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8'>
       <div className='w-full max-w-7xl mx-auto'>
         {/* Main Footer Content */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12 mb-6 sm:mb-8 md:mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-6 md:gap-8 lg:gap-12 mb-10 sm:mb-8 md:mb-10">
+
           {/* Brand Section */}
           <div className="col-span-2 sm:col-span-1 flex flex-col items-center sm:items-start text-center sm:text-left">
             <Link 
@@ -30,7 +31,7 @@ const Footer = () => {
             </Link>
             <div className='w-32 sm:w-40 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent my-2 sm:my-3 md:my-4'></div>
             <p className='text-xs sm:text-sm text-white/60 leading-relaxed'>
-              Your ultimate destination for movies, trailers, and showtimes.
+              Your ultimate destination for movies and showtimes.
             </p>
           </div>
 

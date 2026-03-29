@@ -1,204 +1,175 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Play, Pause, Volume2, VolumeX, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Play, Loader2 } from 'lucide-react';
 import BlurCircle from './BlurCircle';
-import { dummyTrailers } from '../assets/assets';
+import { api } from '../Lib/api';
+
+const DEFAULT_TRAILER_ID = 'mqqft2x_Aa4';
 
 const TrailerSection = () => {
-  const playerRef = useRef(null);
-  const progressInterval = useRef(null);
-  const bufferingTimeout = useRef(null);
-
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const [progress, setProgress] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isResolvingTrailer, setIsResolvingTrailer] = useState(false);
   const [error, setError] = useState(null);
+  const [movies, setMovies] = useState([]);
+  const [currentTrailer, setCurrentTrailer] = useState(null);
+  const [trailerIdByMovie, setTrailerIdByMovie] = useState({});
+  const [currentTrailerId, setCurrentTrailerId] = useState(null);
 
-  const playableTrailers = useMemo(
-    () => dummyTrailers.filter(t => t.isPlayable && t.videoId && t.thumbnail),
-    []
-  );
-
-  const [currentTrailer, setCurrentTrailer] = useState(playableTrailers[0]);
-
-  /* ------------------ INIT YOUTUBE ------------------ */
-
+  /* ------------------ FETCH MOVIES ------------------ */
   useEffect(() => {
-    if (!playableTrailers.length) return;
+    const fetchMovies = async () => {
+      try {
+        const response = await api.getShows();
+        const showsArray = Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.shows)
+            ? response.shows
+            : [];
 
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.body.appendChild(tag);
-      window.onYouTubeIframeAPIReady = createPlayer;
-    } else {
-      createPlayer();
-    }
-
-    function createPlayer() {
-      if (!currentTrailer?.videoId) return;
-
-      playerRef.current = new window.YT.Player('youtube-player', {
-        videoId: currentTrailer.videoId,
-        playerVars: {
-          controls: 0,
-          rel: 0,
-          playsinline: 1,
-          modestbranding: 1,
-          origin: window.location.origin
-        },
-        events: {
-          onReady,
-          onStateChange,
-          onError
+        if (response.success && showsArray.length > 0) {
+          const uniqueMoviesMap = new Map();
+          showsArray.forEach(show => {
+            const movie = show?.movie;
+            if (!movie) return;
+            const key = String(movie.id || movie._id || movie.imdbID || movie.title || '');
+            if (!key) return;
+            if (!uniqueMoviesMap.has(key)) {
+              uniqueMoviesMap.set(key, movie);
+            }
+          });
+          const uniqueMovies = Array.from(uniqueMoviesMap.values());
+          setMovies(uniqueMovies);
+          if (uniqueMovies.length > 0) {
+            setCurrentTrailer(uniqueMovies[0]);
+          }
         }
-      });
-    }
-
-    function onReady(e) {
-      const dur = e.target.getDuration();
-      if (!isNaN(dur)) setDuration(dur);
-      e.target.mute();
-      setIsLoading(false);
-    }
-
-    function onStateChange(e) {
-      const state = window.YT.PlayerState;
-
-      switch (e.data) {
-        case state.BUFFERING:
-          bufferingTimeout.current = setTimeout(() => {
-            setIsLoading(true);
-          }, 400);
-          break;
-
-        case state.PLAYING:
-          clearTimeout(bufferingTimeout.current);
-          setIsLoading(false);
-          setIsPlaying(true);
-          startProgress();
-          break;
-
-        case state.PAUSED:
-          clearTimeout(bufferingTimeout.current);
-          setIsLoading(false);
-          setIsPlaying(false);
-          stopProgress();
-          break;
-
-        case state.ENDED:
-          clearTimeout(bufferingTimeout.current);
-          setIsLoading(false);
-          setIsPlaying(false);
-          stopProgress();
-          setProgress(0);
-          setCurrentTime(0);
-          break;
-
-        case state.UNSTARTED:
-          // 🔥 black screen fallback (Dune / Marvel fix)
-          setTimeout(() => {
-            try {
-              playerRef.current?.playVideo();
-            } catch {}
-          }, 600);
-          break;
-
-        default:
-          break;
-      }
-    }
-
-    function onError() {
-      handlePlayerError();
-    }
-
-    return () => {
-      clearInterval(progressInterval.current);
-      clearTimeout(bufferingTimeout.current);
-      if (playerRef.current) {
-        playerRef.current.destroy();
-        playerRef.current = null;
+      } catch (err) {
+        console.error('Error fetching movies for trailers:', err);
+        setError('Could not load trailers.');
+      } finally {
+        setIsLoading(false);
       }
     };
-  }, [playableTrailers]);
+    fetchMovies();
+  }, []);
 
-  /* ------------------ ERROR HANDLING ------------------ */
+  const movieKey = (movieObj) => String(movieObj?.id || movieObj?._id || movieObj?.imdbID || movieObj?.title || '');
 
-  const handlePlayerError = useCallback(() => {
-    setError('Error loading trailer. Switching…');
-    const index = playableTrailers.findIndex(t => t.id === currentTrailer?.id);
-    const next = playableTrailers[index + 1] || playableTrailers[0];
-    changeTrailer(next);
-  }, [currentTrailer, playableTrailers]);
+  const resolveImdbIdByTitle = async (movieObj) => {
+    const apiKey = import.meta.env.VITE_OMDB_API_KEY;
+    if (!apiKey) return null;
+    const title =
+      movieObj?.original_title ||
+      movieObj?.title ||
+      movieObj?.name ||
+      movieObj?.original_name;
+    if (!title) return null;
 
-  /* ------------------ PROGRESS ------------------ */
-
-  const startProgress = () => {
-    stopProgress();
-    progressInterval.current = setInterval(() => {
-      if (!playerRef.current) return;
-      const cur = playerRef.current.getCurrentTime();
-      const dur = playerRef.current.getDuration() || 1;
-      setCurrentTime(cur);
-      setProgress((cur / dur) * 100);
-    }, 1000);
-  };
-
-  const stopProgress = () => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-      progressInterval.current = null;
+    try {
+      const res = await fetch(
+        `https://www.omdbapi.com/?apikey=${apiKey}&t=${encodeURIComponent(title)}&type=movie`
+      );
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data?.Response === 'True' && data?.imdbID && String(data.imdbID).startsWith('tt')) {
+        return data.imdbID;
+      }
+    } catch (e) {
+      console.warn('OMDb title resolve failed', e);
     }
+    return null;
   };
 
-  /* ------------------ CONTROLS ------------------ */
+  /* ------------------ FETCH TRAILER VIDEO ID ------------------ */
+  const fetchTrailerId = async (movieObj) => {
+    if (!movieObj) return DEFAULT_TRAILER_ID;
+    const key = movieKey(movieObj);
+    if (trailerIdByMovie[key] !== undefined) return trailerIdByMovie[key];
 
-  const togglePlay = () => {
-    if (!playerRef.current) return;
-
-    const state = playerRef.current.getPlayerState();
-    if (state === window.YT.PlayerState.CUED) {
-      playerRef.current.playVideo();
-    } else {
-      isPlaying
-        ? playerRef.current.pauseVideo()
-        : playerRef.current.playVideo();
+    let imdbId = movieObj.imdbID || movieObj.id;
+    if (!imdbId || !String(imdbId).startsWith('tt')) {
+      imdbId = await resolveImdbIdByTitle(movieObj);
     }
+    if (!imdbId || !String(imdbId).startsWith('tt')) return DEFAULT_TRAILER_ID;
+
+    try {
+      const res = await fetch(`https://api.kinocheck.de/movies?imdb_id=${imdbId}`);
+      if (!res.ok) return DEFAULT_TRAILER_ID;
+      const data = await res.json();
+      const kinocheckId =
+        data?.trailer?.youtube_video_id ||
+        data?.trailers?.[0]?.youtube_video_id ||
+        data?.videos?.[0]?.youtube_video_id ||
+        data?.movie?.trailer?.youtube_video_id;
+
+      if (kinocheckId) {
+        return kinocheckId;
+      }
+    } catch (e) {
+      console.warn('Kinocheck API failed', e);
+    }
+    return DEFAULT_TRAILER_ID;
   };
 
-  const toggleMute = () => {
-    if (!playerRef.current) return;
-    isMuted ? playerRef.current.unMute() : playerRef.current.mute();
-    setIsMuted(!isMuted);
-  };
+  const buildYoutubeEmbedUrl = (_, trailerId) =>
+    `https://www.youtube.com/embed/${trailerId || DEFAULT_TRAILER_ID}?autoplay=1&rel=0`;
 
-  const changeTrailer = useCallback((trailer) => {
-    if (!trailer || trailer.id === currentTrailer?.id) return;
+  const buildYoutubeWatchUrl = (trailerId) =>
+    `https://www.youtube.com/watch?v=${trailerId || DEFAULT_TRAILER_ID}`;
+
+  /* ------------------ CORE: PLAY ANY MOVIE ------------------ */
+  const playMovie = async (movieObj) => {
+    if (!movieObj) return;
 
     setError(null);
-    setIsPlaying(false);
-    setProgress(0);
-    setCurrentTime(0);
-    setCurrentTrailer(trailer);
+    setIsResolvingTrailer(true);
+    setCurrentTrailer(movieObj);
 
-    if (playerRef.current) {
-      playerRef.current.cueVideoById({
-        videoId: trailer.videoId,
-        suggestedQuality: 'hd720'
-      });
+    const key = movieKey(movieObj);
+    const videoId = await fetchTrailerId(movieObj);
+    setTrailerIdByMovie((prev) => ({ ...prev, [key]: videoId }));
+    setCurrentTrailerId(videoId);
+    setIsResolvingTrailer(false);
+  };
+
+  useEffect(() => {
+    const loadFirstTrailer = async () => {
+      if (!currentTrailer) return;
+      const key = movieKey(currentTrailer);
+      if (trailerIdByMovie[key] !== undefined) {
+        setCurrentTrailerId(trailerIdByMovie[key]);
+        return;
+      }
+      setIsResolvingTrailer(true);
+      const videoId = await fetchTrailerId(currentTrailer);
+      setTrailerIdByMovie((prev) => ({ ...prev, [key]: videoId }));
+      setCurrentTrailerId(videoId);
+      setIsResolvingTrailer(false);
     }
+    loadFirstTrailer();
   }, [currentTrailer]);
 
-  const formatTime = (s) =>
-    `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const isActiveTrailer = (trailer) =>
+    currentTrailer?.id === trailer.id ||
+    currentTrailer?.imdbID === trailer.imdbID;
+
+  const currentPoster = useMemo(() => {
+    if (!currentTrailer) return 'https://via.placeholder.com/1280x720?text=No+Trailer';
+    let imgUrl = currentTrailer.backdrop_path || currentTrailer.poster_path;
+    if (imgUrl && imgUrl.startsWith('http') && imgUrl.includes('media-amazon.com')) {
+      return imgUrl.replace(/_V1_.*\.jpg$/i, '_V1_SX1000.jpg');
+    }
+    if (imgUrl && !imgUrl.startsWith('http')) {
+      return `https://image.tmdb.org/t/p/w1280${imgUrl}`;
+    }
+    return imgUrl || 'https://via.placeholder.com/1280x720?text=No+Trailer';
+  }, [currentTrailer]);
 
   /* ------------------ UI ------------------ */
-
   return (
-    <div id="trailer-section" className="w-full overflow-hidden px-3 sm:px-4 md:px-6 lg:px-8 py-10 sm:py-12 md:py-16 lg:py-20 bg-gradient-to-b from-gray-900 to-black relative">
+    <div
+      id="trailer-section"
+      className="w-full overflow-hidden px-3 sm:px-4 md:px-6 lg:px-8 py-10 sm:py-12 md:py-16 lg:py-20 bg-gradient-to-b from-gray-900 to-black relative"
+    >
       <BlurCircle top="-100px" right="-100px" />
 
       {error && (
@@ -207,66 +178,127 @@ const TrailerSection = () => {
         </div>
       )}
 
+      {/* ── Main Player ── */}
       <div className="w-full max-w-6xl mx-auto mb-8 sm:mb-10 md:mb-12">
         <div className="relative aspect-video bg-black rounded-lg sm:rounded-2xl overflow-hidden shadow-2xl">
-          {isLoading && (
+          {(isLoading || isResolvingTrailer) && (
             <div className="absolute inset-0 z-20 bg-black/80 flex items-center justify-center">
               <Loader2 className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-red-600 animate-spin" />
             </div>
           )}
 
-          <div id="youtube-player" className="w-full h-full" />
-
-          <div className="absolute bottom-0 w-full p-2 sm:p-3 md:p-4 bg-gradient-to-t from-black/90">
-            <div className="h-1 sm:h-1.5 bg-gray-700 rounded mb-2 sm:mb-3">
-              <div className="h-full bg-red-600" style={{ width: `${progress}%` }} />
-            </div>
-
-            <div className="flex justify-between items-center text-white gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button onClick={togglePlay} className="flex-shrink-0">
-                  {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
-                </button>
-                <span className="text-xs sm:text-sm text-gray-300 whitespace-nowrap">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
+          {currentTrailer ? (
+            <iframe
+              title={currentTrailer?.title || 'Trailer'}
+              src={buildYoutubeEmbedUrl(currentTrailer, currentTrailerId)}
+              className="w-full h-full"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          ) : (
+            <div className="w-full h-full relative">
+              <img src={currentPoster} alt={currentTrailer?.title || 'Trailer not available'} className="w-full h-full object-cover opacity-70" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+                <p className="text-white text-xl font-semibold mb-2">Trailer not available</p>
+                <p className="text-gray-300 text-sm">Trailer is not found for this movie.</p>
               </div>
-
-              <button onClick={toggleMute} className="flex-shrink-0">
-                {isMuted ? <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" /> : <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />}
-              </button>
             </div>
-          </div>
+          )}
         </div>
+
+        {/* Now playing info */}
+        {currentTrailer && (
+          <div className="mt-3 px-1 flex items-center gap-2">
+            <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded font-semibold">
+              NOW PLAYING
+            </span>
+            <h3 className="text-white text-sm sm:text-base font-semibold truncate">
+              {currentTrailer.title}
+            </h3>
+            <a
+              href={buildYoutubeWatchUrl(currentTrailerId)}
+              target="_blank"
+              rel="noreferrer"
+              className="ml-auto text-xs sm:text-sm px-3 py-1 rounded border border-white/20 text-white hover:bg-white/10 transition"
+            >
+              Watch on YouTube
+            </a>
+          </div>
+        )}
       </div>
 
-      {/* MORE TRAILERS */}
+      {/* ── More Trailers ── */}
       <div className="w-full max-w-6xl mx-auto">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-4 sm:mb-6 px-3 sm:px-4">More Trailers</h2>
-        <div className="w-full overflow-x-auto pb-4">
-          <div className="flex gap-3 sm:gap-4 md:gap-6 px-3 sm:px-4" style={{ width: 'max-content' }}>
-        {playableTrailers.map(trailer => (
-          <div
-            key={trailer.id}
-            onClick={() => changeTrailer(trailer)}
-            className={`flex-shrink-0 w-40 sm:w-48 md:w-56 lg:w-64 cursor-pointer rounded-lg sm:rounded-xl overflow-hidden transition ${
-              currentTrailer.id === trailer.id
-                ? 'ring-2 ring-red-500'
-                : 'hover:ring-2 hover:ring-white/50'
-            }`}
-          >
-            <img src={trailer.thumbnail} alt={trailer.title} className="w-full aspect-video object-cover" />
-            <div className="p-2 sm:p-3 bg-black/80 text-white text-xs sm:text-sm font-semibold truncate">
-              {trailer.title}
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-4 sm:mb-6 px-3 sm:px-4">
+          More Trailers
+        </h2>
+
+        {movies.length > 0 ? (
+          <div className="w-full overflow-x-auto pb-4">
+            <div
+              className="flex gap-3 sm:gap-4 md:gap-6 px-3 sm:px-4"
+              style={{ width: 'max-content' }}
+            >
+              {movies.map(trailer => {
+                let imgUrl = trailer.backdrop_path || trailer.poster_path;
+                if (imgUrl && imgUrl.startsWith('http') && imgUrl.includes('media-amazon.com')) {
+                  imgUrl = imgUrl.replace(/_V1_.*\.jpg$/i, '_V1_SX500.jpg');
+                } else if (imgUrl && !imgUrl.startsWith('http')) {
+                  imgUrl = `https://image.tmdb.org/t/p/w500${imgUrl}`;
+                }
+
+                const active = isActiveTrailer(trailer);
+
+                return (
+                  <div
+                    key={trailer.id || trailer.imdbID}
+                    onClick={() => playMovie(trailer)}
+                    className={`flex-shrink-0 w-40 sm:w-48 md:w-56 lg:w-64 cursor-pointer rounded-lg sm:rounded-xl overflow-hidden transition-all duration-200 ${active
+                        ? 'ring-2 ring-red-500 scale-105'
+                        : 'hover:ring-2 hover:ring-white/50'
+                      }`}
+                  >
+                    <div className="relative group">
+                      <img
+                        src={imgUrl || 'https://via.placeholder.com/500x281?text=No+Image'}
+                        alt={trailer.title}
+                        className="w-full aspect-video object-cover"
+                      />
+
+                      {/* Hover play overlay */}
+                      {!active && (
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="bg-red-600 rounded-full p-2">
+                            <Play className="w-5 h-5 text-white fill-white" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Active badge */}
+                      {active && (
+                        <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded font-semibold">
+                          ▶ Playing
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      className={`p-2 sm:p-3 text-xs sm:text-sm font-semibold truncate transition-colors ${active ? 'bg-red-900/60 text-white' : 'bg-black/80 text-white'
+                        }`}
+                    >
+                      {trailer.title}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-          ))}
-          </div>
-        </div>
+        ) : (
+          <p className="text-gray-400 px-3 sm:px-4">No trailers available.</p>
+        )}
       </div>
     </div>
   );
 };
 
 export default TrailerSection;
- 

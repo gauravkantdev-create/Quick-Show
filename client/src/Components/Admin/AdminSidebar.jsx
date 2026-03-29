@@ -1,14 +1,14 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Plus, List, BookOpen } from 'lucide-react'
-import { assets } from '../../assets/assets'
+import profile from '../../assets/profile.png'
 
 const AdminSidebar = () => {
 
   const user = {
     firstName: "Admin",
     lastName: "User",
-    ImageUrl: assets.profile,
+    ImageUrl: profile,
   }
 
   const adminNavlinks = [

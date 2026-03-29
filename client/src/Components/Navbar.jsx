@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { assets } from '../assets/assets'
 import { Menu, Search, X, User, Calendar } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/clerk-react'
@@ -14,7 +13,8 @@ const Navbar = () => {
   }
 
   return (
-    <div className="fixed top-0 left-0 z-50 w-full flex items-center justify-between px-3 sm:px-4 md:px-8 lg:px-16 xl:px-24 2xl:px-32 py-2.5 sm:py-3 md:py-4 bg-black/40 backdrop-blur">
+    <div className="fixed top-0 left-0 z-50 w-full flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-24 py-3 bg-black/60 backdrop-blur-md border-b border-white/5">
+
 
       {/* Logo */}
       <Link
@@ -42,26 +42,56 @@ const Navbar = () => {
       {/* Mobile/Tablet Menu Overlay */}
       <div
         className={`
-          ${open ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
-          lg:hidden fixed top-0 right-0 h-screen w-full sm:w-80 md:w-96
-          flex flex-col items-center justify-center gap-6 sm:gap-8
-          backdrop-blur-md bg-black/90 sm:bg-black/80
-          transition-all duration-300 ease-in-out z-50
+          ${open ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'}
+          lg:hidden fixed inset-0 h-screen w-full
+          flex flex-col items-center justify-center
+          backdrop-blur-xl bg-black/95
+          transition-all duration-500 ease-in-out z-[100]
         `}
       >
         <X
           onClick={() => setOpen(false)}
-          className="absolute top-4 sm:top-6 right-4 sm:right-6 w-6 h-6 sm:w-7 sm:h-7 cursor-pointer text-white hover:text-gray-300 transition-colors"
+          className="absolute top-6 right-6 w-8 h-8 cursor-pointer text-white hover:rotate-90 transition-transform duration-300"
         />
 
-        <div className="flex flex-col items-center gap-6 sm:gap-8 text-center">
-          <Link onClick={() => { setOpen(false); scrollToTop() }} to="/" className="text-white text-lg sm:text-xl font-medium hover:text-gray-300 transition-colors">Home</Link>
-          <Link onClick={() => { setOpen(false); scrollToTop() }} to="/movies" className="text-white text-lg sm:text-xl font-medium hover:text-gray-300 transition-colors">Movies</Link>
-          <Link onClick={() => { setOpen(false); scrollToTop() }} to="/theaters" className="text-white text-lg sm:text-xl font-medium hover:text-gray-300 transition-colors">Theaters</Link>
-          <Link onClick={() => { setOpen(false); scrollToTop() }} to="/releases" className="text-white text-lg sm:text-xl font-medium hover:text-gray-300 transition-colors">Releases</Link>
-          <Link onClick={() => { setOpen(false); scrollToTop() }} to="/favourite" className="text-white text-lg sm:text-xl font-medium hover:text-gray-300 transition-colors">Favourites</Link>
-        </div>
+        <nav className="flex flex-col items-center gap-8 text-center">
+          {[
+            { name: 'Home', path: '/' },
+            { name: 'Movies', path: '/movies' },
+            { name: 'Theaters', path: '/theaters' },
+            { name: 'Releases', path: '/releases' },
+            { name: 'Favourites', path: '/favourite' },
+          ].map((item, index) => (
+            <Link
+              key={item.name}
+              onClick={() => { setOpen(false); scrollToTop() }}
+              to={item.path}
+              className="text-white text-2xl font-semibold hover:text-primary transition-colors tracking-wide"
+              style={{ 
+                transitionDelay: `${index * 50}ms`,
+                transform: open ? 'translateY(0)' : 'translateY(20px)',
+                opacity: open ? 1 : 0
+              }}
+            >
+              {item.name}
+            </Link>
+          ))}
+          
+          <div className="mt-4 flex flex-col gap-4 w-full px-12">
+            {!isSignedIn && (
+              <>
+                <SignInButton mode="modal">
+                  <button className="w-full py-3 bg-primary text-white rounded-full font-bold">Login</button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="w-full py-3 border border-white/20 text-white rounded-full font-bold">Sign Up</button>
+                </SignUpButton>
+              </>
+            )}
+          </div>
+        </nav>
       </div>
+
 
       {/* Right Section */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6">

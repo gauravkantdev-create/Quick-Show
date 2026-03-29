@@ -2,15 +2,22 @@ import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
-
-    mongoose.connection.on("connected", () => {
-      console.log("Database Connected");
+    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    
+    mongoose.connection.on("error", (err) => {
+      console.error("❌ MongoDB connection error:", err);
     });
 
-    await mongoose.connect(`${process.env.MONGODB_URI}`);
+    mongoose.connection.on("disconnected", () => {
+      console.warn("⚠️  MongoDB disconnected");
+    });
 
+    return true;
   } catch (error) {
-    console.log("Database Connection Error:", error.message);
+    console.error("❌ Database Connection Error:", error.message);
+    console.log("🔓 Server will run without database (mock data mode)");
+    return false;
   }
 };
 
