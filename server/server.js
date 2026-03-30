@@ -30,9 +30,12 @@ const startServer = async () => {
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
+    // ✅ FIXED CORS
     app.use(
       cors({
-        origin: "*",
+        origin: [
+          "https://quick-show-67ff.vercel.app", // tera frontend
+        ],
         credentials: true,
       })
     );
@@ -74,7 +77,6 @@ const startServer = async () => {
 
     /* -------------------- PAYMENT ROUTES -------------------- */
 
-    // IMPORTANT: payment routes (no requireAuth here)
     app.use("/api/payments", paymentRoutes);
 
     /* -------------------- 404 HANDLER -------------------- */
