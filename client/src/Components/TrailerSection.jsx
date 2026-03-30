@@ -239,7 +239,7 @@ const TrailerSection = () => {
               className="flex gap-3 sm:gap-4 md:gap-6 px-3 sm:px-4"
               style={{ width: 'max-content' }}
             >
-              {movies.map(trailer => {
+              {movies.map((trailer, index) => {
                 let imgUrl = trailer.backdrop_path || trailer.poster_path;
                 if (imgUrl && imgUrl.startsWith('http') && imgUrl.includes('media-amazon.com')) {
                   imgUrl = imgUrl.replace(/_V1_.*\.jpg$/i, '_V1_SX500.jpg');
@@ -251,7 +251,7 @@ const TrailerSection = () => {
 
                 return (
                   <div
-                    key={trailer.id || trailer.imdbID}
+                    key={`${trailer.id || trailer.imdbID || 'movie'}-${index}`}
                     onClick={() => playMovie(trailer)}
                     className={`flex-shrink-0 w-40 sm:w-48 md:w-56 lg:w-64 cursor-pointer rounded-lg sm:rounded-xl overflow-hidden transition-all duration-200 ${active
                         ? 'ring-2 ring-red-500 scale-105'

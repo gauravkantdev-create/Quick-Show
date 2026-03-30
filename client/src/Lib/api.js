@@ -363,6 +363,60 @@ export const api = {
 
     }
 
-  }
+  },
 
-};
+
+  /* ==================== PAYMENTS ==================== */
+/* ==================== PAYMENTS ==================== */
+
+// ❌ REMOVE getRazorpayKey completely
+
+createPaymentOrder: async (bookingId, token) => {
+  try {
+    const res = await fetch(`${API_URL}/payments/create-order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({ bookingId }),
+    });
+    return res.json();
+  } catch (error) {
+    console.error("createPaymentOrder error:", error);
+    return { success: false };
+  }
+},
+
+verifyPayment: async (paymentData, token) => {
+  try {
+    const res = await fetch(`${API_URL}/payments/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(paymentData),
+    });
+    return res.json();
+  } catch (error) {
+    console.error("verifyPayment error:", error);
+    return { success: false };
+  }
+},
+
+  getPaymentStatus: async (bookingId, token) => {
+    try {
+      const res = await fetch(`${API_URL}/payments/status/${bookingId}`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      return res.json();
+    } catch (error) {
+      console.error("getPaymentStatus error:", error);
+      return { success: false };
+    }
+  },
+
+};

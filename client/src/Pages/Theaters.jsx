@@ -36,7 +36,7 @@ const Theaters = () => {
 
   /* ---------------- UI ---------------- */
   return (
-    <div className="min-h-screen pt-20 sm:pt-24 md:pt-28 px-4 sm:px-6 md:px-12 lg:px-16 text-white pb-16">
+    <div className="min-h-screen pt-28 sm:pt-32 md:pt-36 px-4 sm:px-6 md:px-12 lg:px-16 text-white pb-16">
 
       {/* HEADER */}
       <h1 className="text-2xl sm:text-3xl font-bold mb-8 sm:mb-10 text-center sm:text-left">

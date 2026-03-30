@@ -7,7 +7,7 @@
 /* Custom Theme Variables */
 @theme {
   --color-primary: #f84565;
-  --color-primary-dull: #d63854; /* fixed invalid hex */
+  --color-primary-dull: #d63854;
 }
 
 /* Global Styles */
@@ -15,21 +15,43 @@
   font-family: "Outfit", sans-serif;
   scrollbar-width: thin;
   scrollbar-color: #787777 #1e1e1e;
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 /* Body */
 body {
   color: white;
   background-color: #09090B;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Responsive Text Scaling */
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+p, li {
+  text-wrap: pretty;
 }
 
 /* Hide Scrollbar */
-.no-scrollbar {
+.no-scrollbar,
+.scrollbar-hide {
   scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* Chrome, Safari Scrollbar Hide */
-.no-scrollbar::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
@@ -37,6 +59,7 @@ body {
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
@@ -48,4 +71,37 @@ input[type="number"] {
 /* Fix Calendar Picker Icon */
 ::-webkit-calendar-picker-indicator {
   filter: invert(1);
+}
+
+/* Safe Area for Notched Phones */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Smooth Image Rendering */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Focus Visible for Accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Prevent layout shift on scroll */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Mobile-friendly touch targets */
+@media (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }

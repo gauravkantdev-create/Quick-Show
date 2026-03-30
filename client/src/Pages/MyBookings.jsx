@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { useAuth, useUser, SignInButton } from '@clerk/clerk-react'
 import Loading from '../Components/Loading'
 import BlurCircle from '../Components/BlurCircle'
+import PaymentButton from '../Components/Payment/PaymentButton'
 import { api } from '../Lib/api'
 
 const MyBookings = () => {
 
   const currency = import.meta.env.VITE_CURRENCY || '₹'
-  const { getToken } = useAuth()
-  const { isSignedIn } = useUser()
+  const { getToken, userId } = useAuth()
+  const { isSignedIn, user } = useUser()
 
   const [bookings, setBookings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -91,7 +92,7 @@ const MyBookings = () => {
 
   /* ---------------- UI ---------------- */
   return (
-    <div className="relative w-full px-4 md:px-10 lg:px-20 pt-24 pb-20 min-h-screen bg-black text-white">
+    <div className="relative w-full px-4 sm:px-6 md:px-10 lg:px-20 pt-28 sm:pt-32 md:pt-36 pb-20 min-h-screen bg-black text-white">
 
       <BlurCircle top="100px" left="100px" />
       <BlurCircle bottom="0px" right="0px" />
@@ -178,21 +179,43 @@ const MyBookings = () => {
 
                 <div className="flex gap-3">
 
-                  {/* Pay */}
-                  <button
-                    className="bg-primary px-5 py-2 rounded-full text-sm hover:scale-105 transition"
-                  >
-                    Pay Now
-                  </button>
+                  {/* Pay - Only show if not paid */}
+                  {!item.isPaid && item.paymentStatus !== 'completed' ? (
+                    <PaymentButton
+                      bookingId={item._id}
+                      bookingDetails={{
+                        userName: user?.fullName || user?.firstName || '',
+                        userEmail: user?.primaryEmailAddress?.emailAddress || '',
+                      }}
+                      onSuccess={(result) => {
+                        alert('Payment successful! 🎉')
+                        getMyBookings() // Refresh to show paid status
+                      }}
+                      onError={(error) => {
+                        if (error.message !== 'Payment cancelled by user') {
+                          alert('Payment failed: ' + error.message)
+                        }
+                      }}
+                      className="px-5 py-2 rounded-full text-sm"
+                    >
+                      Pay {currency}{totalAmount}
+                    </PaymentButton>
+                  ) : (
+                    <span className="px-5 py-2 rounded-full text-sm bg-green-600/20 text-green-400 border border-green-500/30">
+                      Paid ✓
+                    </span>
+                  )}
 
 
-                  {/* Delete */}
-                  <button
-                    onClick={() => deleteBooking(item._id)}
-                    className="bg-red-600/20 text-red-500 border border-red-500/30 px-5 py-2 rounded-full text-xs sm:text-sm hover:bg-red-500 hover:text-white transition-all duration-300"
-                  >
-                    Cancel Booking
-                  </button>
+                  {/* Delete - Only allow cancel if not paid */}
+                  {!item.isPaid && (
+                    <button
+                      onClick={() => deleteBooking(item._id)}
+                      className="bg-red-600/20 text-red-500 border border-red-500/30 px-5 py-2 rounded-full text-xs sm:text-sm hover:bg-red-500 hover:text-white transition-all duration-300"
+                    >
+                      Cancel Booking
+                    </button>
+                  )}
 
 
                 </div>

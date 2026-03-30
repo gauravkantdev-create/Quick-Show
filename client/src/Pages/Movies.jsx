@@ -73,7 +73,7 @@ const Movies = () => {
   }
 
   return movies.length > 0 ? (
-    <div className="min-h-screen bg-gray-900 pt-16 sm:pt-20 md:pt-24 pb-8 sm:pb-10 md:pb-12 px-3 sm:px-4 md:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gray-900 pt-28 sm:pt-32 md:pt-36 pb-8 sm:pb-10 md:pb-12 px-4 sm:px-6 md:px-8 lg:px-12 relative overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10">
         <BlurCircle top='150px' left='0px' />
         <BlurCircle bottom='50px' right='50px' />

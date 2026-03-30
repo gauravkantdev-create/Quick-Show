@@ -116,7 +116,7 @@ const MovieDetails = () => {
 
   return (
 
-    <div className="min-h-screen pt-20 sm:pt-24 md:pt-28 px-4 sm:px-6 md:px-12 lg:px-16 text-white pb-20">
+    <div className="min-h-screen pt-28 sm:pt-32 md:pt-36 px-4 sm:px-6 md:px-12 lg:px-16 text-white pb-20">
 
       {/* Title */}
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center sm:text-left">

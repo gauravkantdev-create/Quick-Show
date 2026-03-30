@@ -72,7 +72,7 @@ const TheaterDetails = () => {
 
   return (
 
-    <div className="pt-20 text-white min-h-screen bg-[#020617]">
+    <div className="pt-24 sm:pt-28 text-white min-h-screen bg-[#020617]">
 
       {/* HERO BANNER */}
 

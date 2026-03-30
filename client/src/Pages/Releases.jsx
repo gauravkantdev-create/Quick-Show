@@ -96,7 +96,7 @@ const Releases = () => {
   );
 
   return (
-    <div className="relative min-h-screen bg-black text-white pt-10 pb-20 overflow-hidden">
+    <div className="relative min-h-screen bg-black text-white pt-28 sm:pt-32 md:pt-36 pb-20 overflow-hidden">
       {/* Background Decor */}
       <BlurCircle top="-10%" left="-10%" color="bg-primary/20" />
       <BlurCircle bottom="10%" right="-5%" color="bg-blue-600/10" />

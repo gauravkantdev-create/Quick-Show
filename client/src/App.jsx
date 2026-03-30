@@ -42,7 +42,7 @@ const App = () => {
       {!isAdminRoute && <Navbar />}
 
       {/* MAIN CONTENT */}
-      <div className={`flex-grow ${!isAdminRoute ? "pt-24" : ""}`}>
+      <div className={`flex-grow ${!isAdminRoute ? "" : ""}`}>
 
         <Routes>
 

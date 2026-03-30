@@ -3,13 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth, useUser } from '@clerk/clerk-react'
 import { api } from '../Lib/api'
 import Loading from '../Components/Loading'
+import { usePayment } from '../Components/Payment/usePayment'
 
 const SeatLayout = () => {
 
   const { id } = useParams()
   const navigate = useNavigate()
   const { getToken } = useAuth()
-  const { isSignedIn } = useUser()
+  const { isSignedIn, user } = useUser()
+  const { handlePayment, isProcessing: paymentProcessing } = usePayment()
 
   const [selectedSeats, setSelectedSeats] = useState([])
   const [show, setShow] = useState(null)
@@ -87,6 +89,23 @@ const SeatLayout = () => {
         return
       }
 
+      // Initiate Payment immediately after booking
+      try {
+        if (response.data && response.data._id) {
+          await handlePayment(response.data._id, {
+            userName: user?.fullName || user?.firstName || '',
+            userEmail: user?.primaryEmailAddress?.emailAddress || '',
+          })
+          alert("Payment successful! 🎉")
+        }
+      } catch (error) {
+        if (error.message !== 'Payment cancelled by user') {
+          alert("Payment failed: " + error.message)
+        } else {
+          console.log("Payment cancelled by user.")
+        }
+      }
+
       navigate("/my-bookings")
     } finally {
       setSubmitting(false)
@@ -108,7 +127,7 @@ const SeatLayout = () => {
 
   return (
 
-    <div className="min-h-screen pt-20 sm:pt-24 md:pt-28 px-4 sm:px-6 md:px-12 lg:px-16 text-white bg-[#020617] pb-32">
+    <div className="min-h-screen pt-28 sm:pt-32 md:pt-36 px-4 sm:px-6 md:px-12 lg:px-16 text-white bg-[#020617] pb-32 sm:pb-36">
 
       {/* Header */}
       <div className="text-center mb-6 sm:mb-8 md:mb-10 animate-in fade-in duration-700">
@@ -222,7 +241,7 @@ const SeatLayout = () => {
             </div>
 
             <button
-              disabled={selectedSeats.length === 0 || submitting}
+              disabled={selectedSeats.length === 0 || submitting || paymentProcessing}
               onClick={confirmBooking}
               className={`px-6 sm:px-10 py-2.5 sm:py-3.5 rounded-xl font-bold text-sm sm:text-base transition-all duration-300 transform active:scale-95 shadow-xl
               ${
@@ -232,7 +251,7 @@ const SeatLayout = () => {
               }
               `}
             >
-              {submitting ? "Processing..." : "Book Now"}
+              {submitting || paymentProcessing ? "Processing..." : "Book Now"}
             </button>
           </div>
 

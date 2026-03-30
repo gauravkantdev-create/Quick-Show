@@ -61,7 +61,7 @@ const Favourite = () => {
   if (loading) return <Loading />
 
   return (
-    <div className="min-h-screen pt-16 sm:pt-20 md:pt-24 px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-32 pb-12">
+    <div className="min-h-screen pt-28 sm:pt-32 md:pt-36 px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-32 pb-12">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 text-white">My Favourites</h1>
         <p className="text-sm sm:text-base md:text-lg text-gray-300">Welcome <span className="font-semibold text-primary">{user?.firstName}</span>! Your favourite movies will appear here.</p>
