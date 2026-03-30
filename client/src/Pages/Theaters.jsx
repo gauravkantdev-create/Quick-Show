@@ -10,7 +10,7 @@ const Theaters = () => {
 
   /* ---------------- FETCH THEATERS ---------------- */
   useEffect(() => {
-    fetch('http://localhost:3000/api/theaters')
+    fetch(`${import.meta.env.VITE_API_URL}/api/theaters`)
       .then(res => res.json())
       .then(data => {
         setTheaters(data.data || [])
@@ -45,7 +45,6 @@ const Theaters = () => {
 
       {/* GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-
 
         {theaters.map((t) => (
 
@@ -82,7 +81,6 @@ const Theaters = () => {
                 🎬 Screens: {t.screens}
               </p>
 
-              {/* Rating (optional future use) */}
               {t.rating > 0 && (
                 <p className="text-yellow-400 text-sm mt-1">
                   ⭐ {t.rating}
