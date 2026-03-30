@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { api } from '../Lib/api'
 
 const Theaters = () => {
 
@@ -10,8 +11,7 @@ const Theaters = () => {
 
   /* ---------------- FETCH THEATERS ---------------- */
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/theaters`)
-      .then(res => res.json())
+    api.getTheaters()
       .then(data => {
         setTheaters(data.data || [])
       })

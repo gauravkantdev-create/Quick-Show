@@ -34,7 +34,9 @@ const startServer = async () => {
     app.use(
       cors({
         origin: [
-          "https://quick-show-67ff.vercel.app", // tera frontend
+          "https://quick-show-67ff.vercel.app", // production frontend
+          "http://localhost:5173", // local Vite dev
+          "http://localhost:5174", // local Vite fallback
         ],
         credentials: true,
       })
