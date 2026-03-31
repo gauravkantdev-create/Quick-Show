@@ -30,6 +30,8 @@ const TheaterDetails = () => {
         const showRes = await fetch(`http://localhost:3000/api/shows/theater/${id}`)
         const showData = await showRes.json()
         console.log('Shows API response:', showData)
+        console.log('Shows data array:', showData.data)
+        console.log('Shows data length:', showData.data?.length)
         setShows(showData.data || [])
       } catch (error) {
         console.error(error)
