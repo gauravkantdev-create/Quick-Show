@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api"
+
 const TheaterDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -23,11 +25,11 @@ const TheaterDetails = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const theaterRes = await fetch(`http://localhost:3000/api/theaters/${id}`)
+        const theaterRes = await fetch(`${API_URL}/theaters/${id}`)
         const theaterData = await theaterRes.json()
         setTheater(theaterData.data)
 
-        const showRes = await fetch(`http://localhost:3000/api/shows/theater/${id}`)
+        const showRes = await fetch(`${API_URL}/shows/theater/${id}`)
         const showData = await showRes.json()
         console.log('Shows API response:', showData)
         console.log('Shows data array:', showData.data)
