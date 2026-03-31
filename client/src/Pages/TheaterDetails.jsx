@@ -106,7 +106,8 @@ const TheaterDetails = () => {
       <div className="px-4 sm:px-6 md:px-16 pt-6 sm:pt-10">
         <h2 className="text-2xl font-semibold mb-6">Shows 🎬</h2>
 
-        <div className="space-y-6">
+        <div className="space-y-6 min-h-[200px] border border-dashed border-gray-700 rounded-lg p-4">
+          <p className="text-gray-500 text-sm mb-4">Debug: Found {groupedShows.length} movies</p>
           {groupedShows.length === 0 ? (
             <div className="text-center py-12 bg-gray-800/50 rounded-xl">
               <p className="text-gray-400 text-lg">No shows available for this theater</p>
@@ -116,16 +117,12 @@ const TheaterDetails = () => {
             groupedShows.map(group => (
               <div
                 key={group.movie.id || group.movie._id}
-                className="relative rounded-xl overflow-hidden border border-gray-800 hover:border-primary transition"
+                className="relative rounded-xl overflow-hidden border border-gray-800 hover:border-primary transition bg-gray-900 z-10"
               >
-                {/* Background */}
-                <div
-                  className="absolute inset-0 bg-cover bg-center opacity-20"
-                  style={{ backgroundImage: `url(${group.movie.poster})` }}
-                />
-
-                <div className="relative bg-gradient-to-r from-black/90 to-black/40 p-4 sm:p-6">
-                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
+                {/* Background - removed to test visibility */}
+                {/* Content container */}
+                <div className="p-4 sm:p-6 bg-gray-800/90">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center bg-gray-800/50 p-4 rounded-lg">
                     {/* Poster */}
                     <img
                       src={group.movie.poster}
