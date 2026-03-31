@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useAuth, useUser } from '@clerk/clerk-react'
+import { useAuth, useUser, SignInButton } from '@clerk/clerk-react'
 import { api } from '../Lib/api'
 import Loading from '../Components/Loading'
 import { usePayment } from '../Components/Payment/usePayment'
@@ -240,19 +240,36 @@ const SeatLayout = () => {
               </p>
             </div>
 
-            <button
-              disabled={selectedSeats.length === 0 || submitting || paymentProcessing}
-              onClick={confirmBooking}
-              className={`px-6 sm:px-10 py-2.5 sm:py-3.5 rounded-xl font-bold text-sm sm:text-base transition-all duration-300 transform active:scale-95 shadow-xl
-              ${
-                selectedSeats.length > 0
-                ? "bg-primary text-white hover:bg-primary/90 hover:shadow-primary/20"
-                : "bg-gray-800 text-gray-500 cursor-not-allowed"
-              }
-              `}
-            >
-              {submitting || paymentProcessing ? "Processing..." : "Book Now"}
-            </button>
+            {isSignedIn ? (
+              <button
+                disabled={selectedSeats.length === 0 || submitting || paymentProcessing}
+                onClick={confirmBooking}
+                className={`px-6 sm:px-10 py-2.5 sm:py-3.5 rounded-xl font-bold text-sm sm:text-base transition-all duration-300 transform active:scale-95 shadow-xl
+                ${
+                  selectedSeats.length > 0
+                  ? "bg-primary text-white hover:bg-primary/90 hover:shadow-primary/20"
+                  : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                }
+                `}
+              >
+                {submitting || paymentProcessing ? "Processing..." : "Book Now"}
+              </button>
+            ) : (
+              <SignInButton mode="modal">
+                <button
+                  disabled={selectedSeats.length === 0}
+                  className={`px-6 sm:px-10 py-2.5 sm:py-3.5 rounded-xl font-bold text-sm sm:text-base transition-all duration-300 transform active:scale-95 shadow-xl
+                  ${
+                    selectedSeats.length > 0
+                    ? "bg-primary text-white hover:bg-primary/90 hover:shadow-primary/20"
+                    : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                  }
+                  `}
+                >
+                  Sign in to Book
+                </button>
+              </SignInButton>
+            )}
           </div>
 
         </div>
@@ -260,6 +277,7 @@ const SeatLayout = () => {
 
 
     </div>
+
 
   )
 
