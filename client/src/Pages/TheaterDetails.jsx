@@ -114,7 +114,7 @@ const TheaterDetails = () => {
             groupedShows.map(group => (
               <div
                 key={group.movie.id || group.movie._id}
-                className="relative rounded-xl overflow-hidden border border-gray-800 hover:border-primary transition bg-gray-900 z-10"
+                className="relative rounded-xl overflow-hidden border-2 border-white bg-gray-800"
               >
                 {/* Background - removed to test visibility */}
                 {/* Content container */}
