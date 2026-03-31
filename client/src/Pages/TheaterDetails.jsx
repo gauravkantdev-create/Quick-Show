@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 
 const TheaterDetails = () => {
@@ -44,38 +44,33 @@ const TheaterDetails = () => {
   }, [id])
 
   /* Group Shows by Movie */
-  console.log('Raw shows:', shows)
-  const groupedShows = Object.values(
-    shows.reduce((acc, show) => {
-      console.log('Processing show:', show._id, 'movie:', show.movie)
-      if (!show.movie) {
-        console.log('Show missing movie, skipping:', show)
-        return acc
-      }
-      const movieId = show.movie.id || show.movie._id
-      if (!movieId) {
-        console.log('Show missing movie ID, skipping:', show)
-        return acc
-      }
-
-      if (!acc[movieId]) {
-        acc[movieId] = {
-          movie: show.movie,
-          shows: []
+  const groupedShows = useMemo(() => {
+    console.log('Computing groupedShows from', shows.length, 'shows')
+    const grouped = Object.values(
+      shows.reduce((acc, show) => {
+        if (!show.movie) {
+          console.log('Show missing movie, skipping:', show._id)
+          return acc
         }
-      }
-      acc[movieId].shows.push(show)
-      return acc
-    }, {})
-  )
-  console.log('Grouped shows count:', groupedShows.length, groupedShows)
-  
-  // Debug: force check what's happening
-  if (groupedShows.length > 0) {
-    console.log('First group:', groupedShows[0])
-    console.log('First group movie:', groupedShows[0]?.movie)
-    console.log('First group shows:', groupedShows[0]?.shows)
-  }
+        const movieId = show.movie.id || show.movie._id
+        if (!movieId) {
+          console.log('Show missing movie ID, skipping:', show._id)
+          return acc
+        }
+
+        if (!acc[movieId]) {
+          acc[movieId] = {
+            movie: show.movie,
+            shows: []
+          }
+        }
+        acc[movieId].shows.push(show)
+        return acc
+      }, {})
+    )
+    console.log('Computed grouped shows:', grouped.length)
+    return grouped
+  }, [shows])
 
   if (loading) {
     return (
