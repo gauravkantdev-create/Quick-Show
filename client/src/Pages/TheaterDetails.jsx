@@ -12,6 +12,14 @@ const TheaterDetails = () => {
 
   const [selectedDate, setSelectedDate] = useState(null)
 
+  // Auto-select first available date when shows load
+  useEffect(() => {
+    if (shows.length > 0 && !selectedDate) {
+      const firstDate = new Date(shows[0].showDateTime).toISOString().split('T')[0]
+      setSelectedDate(firstDate)
+    }
+  }, [shows])
+
   useEffect(() => {
 
     const fetchData = async () => {
@@ -110,7 +118,7 @@ const TheaterDetails = () => {
 
       {/* CONTENT */}
 
-      <div className="px-6 md:px-16 pt-10">
+      <div className="px-4 sm:px-6 md:px-16 pt-6 sm:pt-10">
 
         <h2 className="text-2xl font-semibold mb-6">
           Shows 🎬
@@ -137,14 +145,14 @@ const TheaterDetails = () => {
 
               <div className="relative bg-gradient-to-r from-black/90 to-black/40 p-6">
 
-                <div className="flex gap-6 items-center">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
 
                   {/* Poster */}
 
                   <img
                     src={group.movie.poster}
                     alt=""
-                    className="w-28 h-40 rounded-lg object-cover shadow-lg"
+                    className="w-24 h-36 sm:w-28 sm:h-40 rounded-lg object-cover shadow-lg shrink-0"
                   />
 
 
@@ -152,11 +160,11 @@ const TheaterDetails = () => {
 
                   <div className="flex-1">
 
-                    <h3 className="text-2xl font-semibold mb-2">
+                    <h3 className="text-xl sm:text-2xl font-semibold mb-2">
                       {group.movie.title}
                     </h3>
 
-                    <div className="flex gap-3 text-sm text-gray-400 mb-4">
+                    <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm text-gray-400 mb-4">
                       <span>2D</span>
                       <span>Dolby</span>
                       <span>Hindi</span>
@@ -165,7 +173,7 @@ const TheaterDetails = () => {
 
                     {/* DATE SELECT */}
 
-                    <div className="flex gap-3 mb-4 flex-wrap">
+                    <div className="flex gap-2 sm:gap-3 mb-4 flex-wrap">
 
                       {[...new Set(group.shows.map(show =>
                         new Date(show.showDateTime)
@@ -176,7 +184,7 @@ const TheaterDetails = () => {
                           key={date}
                           onClick={() => setSelectedDate(date)}
 
-                          className={`px-3 py-1 rounded-lg text-sm transition
+                          className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm transition
 
                           ${
                             selectedDate === date
@@ -198,7 +206,7 @@ const TheaterDetails = () => {
 
                     {selectedDate && (
 
-                      <div className="flex gap-3 mb-4 flex-wrap">
+                      <div className="flex gap-2 sm:gap-3 mb-4 flex-wrap">
 
                         {group.shows
                           .filter(show =>
@@ -225,7 +233,7 @@ const TheaterDetails = () => {
                                   navigate(`/seat/${show._id}`)
                                 }
 
-                                className="px-4 py-2 rounded-lg text-sm transition
+                                className="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition
                                 bg-gray-800 hover:bg-primary"
                               >
 
