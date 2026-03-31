@@ -23,6 +23,8 @@ const FeaturedSection = () => {
           for (const show of showsArray) {
             const movie = show?.movie;
             if (!movie) continue;
+            // Only include shows with valid theater assignments
+            if (!show?.theater) continue;
             const movieId = movie.id || movie._id || movie.imdbID;
             if (!movieId) continue;
             if (!uniqueMoviesMap.has(movieId)) {

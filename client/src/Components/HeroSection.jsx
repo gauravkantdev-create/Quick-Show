@@ -31,7 +31,9 @@ const HeroSection = () => {
     (async () => {
       const res = await api.getShows();
       if (res.success) {
-        const raw = res.data.map((s) => s.movie).filter(Boolean);
+        const raw = res.data
+          .filter((s) => s.theater && s.movie) // Only shows with theater and movie
+          .map((s) => s.movie);
         const unique = Array.from(
           new Map(raw.map((m) => [m._id || m.title, m])).values()
         );

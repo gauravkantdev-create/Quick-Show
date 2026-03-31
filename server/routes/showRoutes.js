@@ -5,11 +5,20 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-
 /* ---------------- GET ALL SHOWS ---------------- */
 router.get('/', async (req, res) => {
   try {
-    const shows = await Show.find()
+
+    const { movieId } = req.query;
+
+    let query = {};
+
+    // 🔥 filter by movie id if provided
+    if (movieId) {
+      query["movie.id"] = movieId;
+    }
+
+    const shows = await Show.find(query)
       .populate("theater")
       .sort({ showDateTime: 1 });
 
@@ -19,17 +28,18 @@ router.get('/', async (req, res) => {
     });
 
   } catch (error) {
+
     res.json({
       success: false,
       data: [],
       message: error.message
     });
+
   }
 });
 
 
 /* ---------------- GET SHOWS BY THEATER ---------------- */
-/* 🔥 VERY IMPORTANT */
 router.get('/theater/:id', async (req, res) => {
 
   try {
@@ -92,9 +102,11 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 
   try {
+
     const { movie, theater, showDateTime, showPrice, screen } = req.body;
 
     const showDate = new Date(showDateTime);
+
     if (!movie?.id || !theater || Number.isNaN(showDate.getTime())) {
       return res.status(400).json({
         success: false,
@@ -102,9 +114,11 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const theaterObjectId = new mongoose.Types.ObjectId(theater);
+
     const existingShow = await Show.findOne({
       "movie.id": movie.id,
-      theater,
+      theater: theaterObjectId,
       showDateTime: showDate,
     });
 
@@ -117,18 +131,22 @@ router.post('/', async (req, res) => {
 
     const show = await Show.create({
       movie,
-      theater,
+      theater: theaterObjectId,
       showDateTime: showDate,
       showPrice,
       screen,
     });
 
+    const populatedShow = await Show.findById(show._id).populate("theater");
+
     res.status(201).json({
       success: true,
-      data: show
+      data: populatedShow
     });
 
   } catch (error) {
+
+    console.error("Create show error:", error);
 
     res.json({
       success: false,
@@ -149,7 +167,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       req.params.id,
       req.body,
       { new: true }
-    );
+    ).populate("theater");
 
     if (!show) {
       return res.status(404).json({

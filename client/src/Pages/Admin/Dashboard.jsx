@@ -53,16 +53,21 @@ if (showsRes.success) {
 
 const shows = showsRes.data || []
 
+// Filter out shows without theater assignments
+const validShows = shows.filter(show => show?.theater)
+
+const validRevenue = validShows.reduce(
+(acc, show) => acc + (show.showPrice || 0),
+0
+)
+
 setDashboardData({
 
 totalBookings: 0,
 
-totalRevenue: shows.reduce(
-(acc, show) => acc + (show.showPrice || 0),
-0
-),
+totalRevenue: validRevenue,
 
-activeShows: shows,
+activeShows: validShows,
 
 totalUsers: 0
 

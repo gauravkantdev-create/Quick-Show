@@ -4,8 +4,6 @@ import Loading from "../../Components/Loading";
 import Title from "../../Components/Admin/Title";
 import { api } from "../../Lib/api.js";
 
-const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='280' viewBox='0 0 500 280'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='100%25' stop-color='%2316213e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='500' height='280'/%3E%3Ctext fill='%23555' font-family='Arial' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-
 const AddShows = () => {
 
   const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
@@ -18,13 +16,14 @@ const AddShows = () => {
   const [showPrice, setShowPrice] = useState("");
   const [fetchLoading, setFetchLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
+
   const { getToken } = useAuth();
 
-  /* ---------------- FETCH MOVIES ---------------- */
+  /* ---------------- FETCH DATA ---------------- */
 
   useEffect(() => {
 
-    const fetchMovies = async () => {
+    const fetchData = async () => {
 
       try {
 
@@ -32,42 +31,30 @@ const AddShows = () => {
 
         const [moviesRes, theatersRes] = await Promise.all([
           api.getNowPlayingMovies(),
-          api.getTheaters(),
+          api.getTheaters()
         ]);
 
-        if (moviesRes.success && moviesRes.results?.length > 0) {
+        if (moviesRes.success) {
 
-          // 🔥 REMOVE DUPLICATES
-          const uniqueMovies = Array.from(
-            new Map(
-              moviesRes.results.map(movie => [movie.imdbID, movie])
-            ).values()
-          );
-
-          const movies = uniqueMovies.map((movie) => ({
-            
+          const movies = moviesRes.results.map(movie => ({
             id: movie.imdbID,
-            imdbID: movie.imdbID,
             title: movie.Title,
-            release_date: movie.Year,
-            poster: movie.Poster,
-            poster_path: movie.Poster,
-            vote_average: 0
-
+            poster: movie.Poster
           }));
 
           setNowPlayingMovies(movies);
-
         }
 
-        if (theatersRes.success && theatersRes.data?.length > 0) {
+        if (theatersRes.success) {
+
           setTheaters(theatersRes.data);
-          setSelectedTheater(theatersRes.data[0]._id);
+          setSelectedTheater(theatersRes.data?.[0]?._id);
+
         }
 
       } catch (error) {
 
-        console.error(error);
+        console.error("Fetch error:", error);
 
       } finally {
 
@@ -77,10 +64,9 @@ const AddShows = () => {
 
     };
 
-    fetchMovies();
+    fetchData();
 
   }, []);
-
 
   /* ---------------- ADD DATE ---------------- */
 
@@ -90,18 +76,10 @@ const AddShows = () => {
 
     const [date, time] = dateTimeInput.split("T");
 
-    setDateTimeSection((prev) => {
-
-      const times = prev[date] || [];
-
-      return {
-
-        ...prev,
-        [date]: [...times, time]
-
-      };
-
-    });
+    setDateTimeSection(prev => ({
+      ...prev,
+      [date]: [...(prev[date] || []), time]
+    }));
 
     setDateTimeInput("");
 
@@ -112,87 +90,66 @@ const AddShows = () => {
 
   const handleAddShow = async () => {
 
-    if (!selectedMovie) {
-      alert("Please select a movie");
-      return;
-    }
-
-    if (!selectedTheater && !addToAllTheaters) {
-      alert("Please select a theater or check 'Create in all theaters'");
-      return;
-    }
-
-    if (showPrice === '' || Number(showPrice) <= 0) {
-      alert("Show price must be greater than 0");
-      return;
-    }
-
-    if (Object.keys(dateTimeSection).length === 0) {
-      alert("Add at least one show date and time");
-      return;
-
-    }
-
     try {
 
+      if (!selectedMovie) {
+        alert("Select Movie");
+        return;
+      }
+
+      if (!showPrice) {
+        alert("Enter show price");
+        return;
+      }
+
+      if (!Object.keys(dateTimeSection).length) {
+        alert("Add show time");
+        return;
+      }
+
       setSubmitLoading(true);
-      let createdCount = 0;
-      let skippedCount = 0;
 
       const token = await getToken();
-      if (!token) {
-        alert("Please login again to continue");
-        return;
-      }
 
       const movie = nowPlayingMovies.find(
-        (m) => m.id === selectedMovie
+        m => m.id === selectedMovie
       );
-      const theaterIds = addToAllTheaters
-        ? theaters.map((theater) => theater._id)
+
+      // Determine which theaters to create shows for
+      const theatersToUse = addToAllTheaters 
+        ? theaters.map(t => t._id)
         : [selectedTheater];
 
-      if (theaterIds.length === 0) {
-        alert("No theaters available");
-        return;
-      }
+      let createdCount = 0;
 
-      for (const theaterId of theaterIds) {
+      for (const theaterId of theatersToUse) {
         for (const [date, times] of Object.entries(dateTimeSection)) {
-
           for (const time of times) {
-
-            const response = await api.createShow({
-
-              movie,
-              theater: theaterId,
-              showDateTime: `${date}T${time}`,
-              showPrice
-
-            }, token);
-
-            if (!response.success) {
-              if ((response.error || "").toLowerCase().includes("already exists")) {
-                skippedCount += 1;
-                continue;
-              }
-              throw new Error(response.error || "Failed to create show");
+            try {
+              await api.createShow({
+                movie,
+                theater: theaterId,
+                showDateTime: `${date}T${time}`,
+                showPrice
+              }, token);
+              createdCount++;
+            } catch (err) {
+              console.error(`Failed to create show for theater ${theaterId}:`, err);
             }
-            createdCount += 1;
-
           }
         }
       }
 
-      alert(`Shows created: ${createdCount} | duplicates skipped: ${skippedCount}`);
+      alert(`Shows Created Successfully! Created ${createdCount} shows across ${theatersToUse.length} theater(s).`);
 
       setSelectedMovie(null);
       setShowPrice("");
       setDateTimeSection({});
+      setAddToAllTheaters(false);
 
     } catch (error) {
 
-      console.error(error);
+      console.error("Create error:", error);
 
     } finally {
 
@@ -216,131 +173,135 @@ const AddShows = () => {
       ) : (
 
         <>
-        
-        <p className="mt-8 text-lg font-semibold">
-          Now Playing Movies
-        </p>
 
-        {/* Movies */}
+          {/* Movies */}
 
-        <div className="flex gap-5 mt-6 flex-wrap">
+          <div className="flex gap-4 flex-wrap mt-6">
 
-          {nowPlayingMovies.map((movie) => (
+            {nowPlayingMovies.map(movie => (
 
-            <div
-              key={movie.id}
-              onClick={() => setSelectedMovie(movie.id)}
-              className={`cursor-pointer w-40 border rounded-lg p-2 transition
-              ${selectedMovie === movie.id ? "border-primary scale-105" : "border-gray-700"}
-              `}
-            >
+              <div
+                key={movie.id}
+                onClick={() => setSelectedMovie(movie.id)}
+                className={`cursor-pointer w-40 border rounded p-2 
+                ${selectedMovie === movie.id ? "border-green-500" : ""}`}
+              >
 
-              <img
-                src={movie.poster || movie.poster_path}
-                onError={(e)=>{
-                  // Prevent infinite loop
-                  if (e.target.getAttribute('data-error-handled') === 'true') {
-                    return;
-                  }
-                  
-                  const currentSrc = e.target.src;
-                  // Try to fix Amazon image URL if it has size parameter
-                  if (currentSrc.includes('media-amazon.com') && currentSrc.includes('_V1_') && !currentSrc.endsWith('_V1_.jpg')) {
-                    const fullResUrl = currentSrc.replace(/_V1_.*\.jpg$/i, '_V1_.jpg');
-                    if (fullResUrl !== currentSrc) {
-                      e.target.src = fullResUrl;
-                      return;
-                    }
-                  }
-                  
-                  // Fallback to placeholder
-                  e.target.setAttribute('data-error-handled', 'true');
-                  e.target.src = PLACEHOLDER_IMG;
-                }}
-                className="w-full h-60 object-cover rounded bg-gray-800"
-              />
+                <img
+                  src={movie.poster}
+                  alt={movie.title}
+                  className="w-full h-60 object-cover rounded"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src =
+                      "https://dummyimage.com/300x450/000/fff&text=No+Image";
+                  }}
+                />
 
-              <p className="mt-2 text-sm">
-                {movie.title}
-              </p>
+                <p className="text-sm mt-2">{movie.title}</p>
 
-            </div>
+              </div>
 
-          ))}
+            ))}
 
-        </div>
+          </div>
 
 
-        {/* Price */}
-
-        <div className="mt-6">
+          {/* Show Price */}
 
           <input
             type="number"
             placeholder="Show Price"
             value={showPrice}
             onChange={(e) => setShowPrice(e.target.value)}
-            className="p-2 border bg-black rounded"
+            className="mt-6 p-2 border rounded"
           />
 
-        </div>
 
-        {/* Theater */}
-        <div className="mt-4">
-          <label className="flex items-center gap-2 mb-3 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={addToAllTheaters}
-              onChange={(e) => setAddToAllTheaters(e.target.checked)}
-            />
-            Create this show in all theaters
-          </label>
+          {/* Theater Selection */}
 
-          <select
-            value={selectedTheater}
-            onChange={(e) => setSelectedTheater(e.target.value)}
-            disabled={addToAllTheaters}
-            className="p-2 border bg-black rounded min-w-64 disabled:opacity-60"
-          >
-            {theaters.length === 0 && (
-              <option value="">No theaters available</option>
-            )}
-            {theaters.map((theater) => (
-              <option key={theater._id} value={theater._id}>
-                {theater.name} - {theater.location}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div className="mt-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+            <label className="block text-sm font-medium text-gray-300 mb-3">
+              Select Theater
+            </label>
+            
+            <select
+              value={selectedTheater}
+              onChange={(e) => setSelectedTheater(e.target.value)}
+              disabled={addToAllTheaters}
+              className={`block w-full p-3 rounded-lg border-2 transition-colors ${
+                addToAllTheaters 
+                  ? "bg-gray-700 border-gray-600 text-gray-500 cursor-not-allowed"
+                  : "bg-gray-800 border-primary/50 text-white focus:border-primary focus:outline-none"
+              }`}
+            >
+              {theaters.map(theater => (
+                <option key={theater._id} value={theater._id} className="bg-gray-800">
+                  {theater.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Add to All Theaters Option */}
+            <label className="flex items-center gap-3 mt-4 cursor-pointer group">
+              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                addToAllTheaters 
+                  ? "bg-primary border-primary" 
+                  : "border-gray-500 group-hover:border-primary/50"
+              }`}>
+                {addToAllTheaters && (
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <input
+                type="checkbox"
+                checked={addToAllTheaters}
+                onChange={(e) => setAddToAllTheaters(e.target.checked)}
+                className="hidden"
+              />
+              <span className={`text-sm font-medium transition-colors ${
+                addToAllTheaters ? "text-primary" : "text-gray-300 group-hover:text-white"
+              }`}>
+                Add to ALL Theaters ({theaters.length} theaters)
+              </span>
+            </label>
+          </div>
 
 
-        {/* Date */}
-
-        <div className="mt-6">
+          {/* Date Time */}
 
           <input
             type="datetime-local"
             value={dateTimeInput}
-            onChange={(e)=>setDateTimeInput(e.target.value)}
-            className="p-2 bg-black border rounded"
+            onChange={(e) => setDateTimeInput(e.target.value)}
+            className="mt-4 p-2 border rounded"
           />
+
 
           <button
             onClick={handleDateTimeAdd}
-            className="ml-3 px-4 py-2 bg-primary rounded"
+            className="ml-3 px-4 py-2 bg-blue-500 text-white rounded"
           >
             Add
           </button>
 
-        </div>
 
+          {/* Create Button */}
 
-        <button
-          onClick={handleAddShow}
-          className="mt-6 px-6 py-2 bg-primary rounded"
-        >
-          {submitLoading ? "Creating..." : "Create Show"}
-        </button>
+          <button
+            onClick={handleAddShow}
+            className="block mt-6 px-6 py-3 bg-gradient-to-r from-primary to-primary/80 text-white rounded-lg font-semibold shadow-lg hover:shadow-primary/30 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            disabled={submitLoading}
+          >
+            {submitLoading 
+              ? "Creating..." 
+              : addToAllTheaters 
+                ? `Create Shows for All ${theaters.length} Theaters` 
+                : "Create Show"
+            }
+          </button>
 
         </>
 

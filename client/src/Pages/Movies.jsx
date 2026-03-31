@@ -26,6 +26,7 @@ const Movies = () => {
           for (const show of showsArray) {
             const movie = show?.movie;
             if (!movie) continue;
+            if (!show?.theater) continue;
             const movieId = movie.id || movie._id || movie.imdbID;
             if (!movieId) continue;
             if (!uniqueMoviesMap.has(movieId)) {
@@ -73,17 +74,19 @@ const Movies = () => {
   }
 
   return movies.length > 0 ? (
-    <div className="min-h-screen bg-gray-900 pt-28 sm:pt-32 md:pt-36 pb-8 sm:pb-10 md:pb-12 px-4 sm:px-6 md:px-8 lg:px-12 relative overflow-hidden">
-      <div className="max-w-7xl mx-auto relative z-10">
+    <div className="min-h-screen bg-gray-900 pt-24 sm:pt-28 md:pt-32 pb-8 sm:pb-12 px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
+      <div className="max-w-7xl mx-auto">
         <BlurCircle top='150px' left='0px' />
         <BlurCircle bottom='50px' right='50px' />
 
-        <h1 className="text-4xl md:text-6xl font-black mb-4 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent">MOVIES YOU MAY LIKE</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-6 sm:mb-8 text-white">
+          MOVIES YOU MAY LIKE
+        </h1>
+        
+        {/* Responsive Grid - works on all screen sizes */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
           {movies.slice(0, 8).map((movie) => (
-            <div key={movie.id} className="h-full">
-              <MovieCard movie={movie} />
-            </div>
+            <MovieCard key={movie.id} movie={movie} />
           ))}
         </div>
       </div>
@@ -95,4 +98,4 @@ const Movies = () => {
   );
 };
 
-export default Movies
+export default Movies;

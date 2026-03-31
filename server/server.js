@@ -20,6 +20,7 @@ const port = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
+
     /* -------------------- DB CONNECT -------------------- */
 
     await connectDB();
@@ -30,22 +31,18 @@ const startServer = async () => {
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
-    // ✅ FIXED CORS
+    /* -------------------- CORS -------------------- */
+
     app.use(
       cors({
         origin: [
-          "https://quick-show-67ff.vercel.app", // production frontend
-          "http://localhost:5173", // local Vite dev
-          "http://localhost:5174", // local Vite fallback
+          "https://quick-show-67ff.vercel.app",
+          "http://localhost:5173",
+          "http://localhost:5174",
         ],
         credentials: true,
       })
     );
-
-    /* -------------------- AUTH -------------------- */
-
-    app.use(clerkMiddleware());
-    console.log("🔐 Clerk authentication ENABLED");
 
     /* -------------------- TEST ROUTE -------------------- */
 
@@ -70,16 +67,18 @@ const startServer = async () => {
 
     app.use("/api/shows", showRoutes);
     app.use("/api/theaters", theaterRoutes);
+    app.use("/api/payments", paymentRoutes);
+
+    /* -------------------- CLERK AUTH ONLY AFTER PUBLIC ROUTES -------------------- */
+
+    app.use(clerkMiddleware());
+    console.log("🔐 Clerk authentication ENABLED");
 
     /* -------------------- PROTECTED ROUTES -------------------- */
 
     app.use("/api/bookings", requireAuth(), bookingRoutes);
     app.use("/api/users", requireAuth(), userRoutes);
     app.use("/api/dashboard", requireAuth(), dashboardRoutes);
-
-    /* -------------------- PAYMENT ROUTES -------------------- */
-
-    app.use("/api/payments", paymentRoutes);
 
     /* -------------------- 404 HANDLER -------------------- */
 
@@ -106,6 +105,7 @@ const startServer = async () => {
     app.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
     });
+
   } catch (error) {
     console.log("Server failed to start:", error.message);
     process.exit(1);
