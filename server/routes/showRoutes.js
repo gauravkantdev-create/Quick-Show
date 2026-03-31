@@ -43,25 +43,28 @@ router.get('/', async (req, res) => {
 router.get('/theater/:id', async (req, res) => {
 
   try {
-
+    console.log('Fetching shows for theater:', req.params.id)
+    
     const shows = await Show.find({
       theater: req.params.id
     })
       .populate("theater")
-      .sort({ showDateTime: 1 });
+      .sort({ showDateTime: 1 })
+    
+    console.log('Found shows count:', shows.length)
+    console.log('First show:', shows[0])
 
     res.json({
       success: true,
       data: shows
-    });
+    })
 
   } catch (error) {
-
+    console.error('Error fetching shows by theater:', error)
     res.status(500).json({
       success: false,
       error: error.message
-    });
-
+    })
   }
 
 });
