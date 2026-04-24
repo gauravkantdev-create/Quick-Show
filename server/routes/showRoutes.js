@@ -1,13 +1,27 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import Show from '../models/Show.js';
+import Theater from '../models/Theater.js';
+import { isDatabaseConnected } from "../config/db.js";
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
+const databaseUnavailableResponse = {
+  success: false,
+  error:
+    "Database connection is unavailable. Fix the MongoDB connection, then try again.",
+};
+
 /* ---------------- GET ALL SHOWS ---------------- */
 router.get('/', async (req, res) => {
   try {
+    if (!isDatabaseConnected()) {
+      return res.status(503).json({
+        ...databaseUnavailableResponse,
+        data: [],
+      });
+    }
 
     const { movieId } = req.query;
 
@@ -43,6 +57,13 @@ router.get('/', async (req, res) => {
 router.get('/theater/:id', async (req, res) => {
 
   try {
+    if (!isDatabaseConnected()) {
+      return res.status(503).json({
+        ...databaseUnavailableResponse,
+        data: [],
+      });
+    }
+
     console.log('Fetching shows for theater:', req.params.id)
     
     const shows = await Show.find({
@@ -74,6 +95,9 @@ router.get('/theater/:id', async (req, res) => {
 router.get('/:id', async (req, res) => {
 
   try {
+    if (!isDatabaseConnected()) {
+      return res.status(503).json(databaseUnavailableResponse);
+    }
 
     const show = await Show.findById(req.params.id).populate("theater");
 
@@ -105,12 +129,22 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 
   try {
+    if (!isDatabaseConnected()) {
+      return res.status(503).json(databaseUnavailableResponse);
+    }
 
     const { movie, theater, showDateTime, showPrice, screen } = req.body;
 
     const showDate = new Date(showDateTime);
 
-    if (!movie?.id || !theater || Number.isNaN(showDate.getTime())) {
+    if (
+      !movie?.id ||
+      !movie?.title ||
+      !theater ||
+      !mongoose.Types.ObjectId.isValid(theater) ||
+      Number.isNaN(showDate.getTime()) ||
+      Number(showPrice) <= 0
+    ) {
       return res.status(400).json({
         success: false,
         error: "Invalid show payload",
@@ -118,6 +152,14 @@ router.post('/', async (req, res) => {
     }
 
     const theaterObjectId = new mongoose.Types.ObjectId(theater);
+    const theaterExists = await Theater.exists({ _id: theaterObjectId });
+
+    if (!theaterExists) {
+      return res.status(404).json({
+        success: false,
+        error: "Selected theater does not exist",
+      });
+    }
 
     const existingShow = await Show.findOne({
       "movie.id": movie.id,
@@ -136,7 +178,7 @@ router.post('/', async (req, res) => {
       movie,
       theater: theaterObjectId,
       showDateTime: showDate,
-      showPrice,
+      showPrice: Number(showPrice),
       screen,
     });
 
@@ -165,6 +207,9 @@ router.post('/', async (req, res) => {
 router.put('/:id', requireAuth, async (req, res) => {
 
   try {
+    if (!isDatabaseConnected()) {
+      return res.status(503).json(databaseUnavailableResponse);
+    }
 
     const show = await Show.findByIdAndUpdate(
       req.params.id,
@@ -200,6 +245,9 @@ router.put('/:id', requireAuth, async (req, res) => {
 router.delete('/:id', async (req, res) => {
 
   try {
+    if (!isDatabaseConnected()) {
+      return res.status(503).json(databaseUnavailableResponse);
+    }
 
     const show = await Show.findByIdAndDelete(req.params.id);
 
