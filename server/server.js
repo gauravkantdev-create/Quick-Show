@@ -7,7 +7,6 @@ import { clerkMiddleware, requireAuth } from "@clerk/express";
 import { serve } from "inngest/express";
 import { inngest, functions } from "./inngest/index.js";
 
-// ROUTES
 import showRoutes from "./routes/showRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -20,18 +19,15 @@ const port = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
-
-    /* -------------------- DB CONNECT -------------------- */
-
-    await connectDB();
-    console.log("✅ Database Connected");
-
-    /* -------------------- MIDDLEWARE -------------------- */
+    const isDatabaseConnected = await connectDB();
+    if (isDatabaseConnected) {
+      console.log("Database connection ready");
+    } else {
+      console.warn("Database connection unavailable");
+    }
 
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
-
-    /* -------------------- CORS -------------------- */
 
     app.use(
       cors({
@@ -44,16 +40,12 @@ const startServer = async () => {
       })
     );
 
-    /* -------------------- TEST ROUTE -------------------- */
-
     app.get("/", (req, res) => {
       res.json({
         success: true,
-        message: "Server is live 🚀",
+        message: "Server is live",
       });
     });
-
-    /* -------------------- INNGEST -------------------- */
 
     app.use(
       "/api/inngest",
@@ -63,24 +55,16 @@ const startServer = async () => {
       })
     );
 
-    /* -------------------- PUBLIC ROUTES -------------------- */
-
     app.use("/api/shows", showRoutes);
     app.use("/api/theaters", theaterRoutes);
     app.use("/api/payments", paymentRoutes);
 
-    /* -------------------- CLERK AUTH ONLY AFTER PUBLIC ROUTES -------------------- */
-
     app.use(clerkMiddleware());
-    console.log("🔐 Clerk authentication ENABLED");
-
-    /* -------------------- PROTECTED ROUTES -------------------- */
+    console.log("Clerk authentication enabled");
 
     app.use("/api/bookings", requireAuth(), bookingRoutes);
     app.use("/api/users", requireAuth(), userRoutes);
     app.use("/api/dashboard", requireAuth(), dashboardRoutes);
-
-    /* -------------------- 404 HANDLER -------------------- */
 
     app.use((req, res) => {
       res.status(404).json({
@@ -89,10 +73,8 @@ const startServer = async () => {
       });
     });
 
-    /* -------------------- ERROR HANDLER -------------------- */
-
     app.use((err, req, res, next) => {
-      console.error("Server Error:", err);
+      console.error("Server error:", err);
 
       res.status(500).json({
         success: false,
@@ -100,12 +82,9 @@ const startServer = async () => {
       });
     });
 
-    /* -------------------- SERVER START -------------------- */
-
     app.listen(port, () => {
-      console.log(`🚀 Server running on port ${port}`);
+      console.log(`Server running on port ${port}`);
     });
-
   } catch (error) {
     console.log("Server failed to start:", error.message);
     process.exit(1);
